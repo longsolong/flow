@@ -1,5 +1,4 @@
 PROJECT_NAME := "app"
-PKG := "gitlab.com/marvincaspar/$(PROJECT_NAME)"
 MAIN_FILE := "cmd/server/main.go"
 PKG_LIST := $(shell go list ./... | grep -v /vendor/)
 GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)

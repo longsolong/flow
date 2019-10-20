@@ -8,17 +8,17 @@ fi
 
 PASS=true
 
+go vet ./...
+if [[ $? != 0 ]]; then
+  PASS=false
+fi
+
 for FILE in $STAGED_GO_FILES
 do
   goimports -w $FILE
 
   golint "-set_exit_status" $FILE
   if [[ $? == 1 ]]; then
-    PASS=false
-  fi
-
-  go vet $FILE
-  if [[ $? != 0 ]]; then
     PASS=false
   fi
 done

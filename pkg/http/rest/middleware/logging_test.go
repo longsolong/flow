@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/marvincaspar/go-web-app-boilerplate/test"
+	"github.com/longsolong/flow/test"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
