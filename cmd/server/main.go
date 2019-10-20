@@ -1,10 +1,8 @@
 package main
 
 import (
-	"crypto/tls"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/longsolong/flow/pkg/http/rest"
@@ -37,24 +35,9 @@ func run() error {
 	restHandler := rest.CreateHandler(logger)
 	restHandler.NewHealthCheckHandler()
 
-	// See https://blog.bracebin.com/achieving-perfect-ssl-labs-score-with-go
-	tlsConfig := func(srv *http.Server) {
-		srv.TLSConfig = &tls.Config{
-			MinVersion:               tls.VersionTLS12,
-			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-			PreferServerCipherSuites: true,
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-			},
-		}
-	}
-
 	// listen and serve
 	// webServer := server.CreateServer(restHandler.GetRouter(), ":"+os.Getenv("HTTP_PORT"))
-	webServer := infra.CreateServer(restHandler.GetRouter(), ":3000", tlsConfig)
+	webServer := infra.CreateServer(restHandler.GetRouter(), ":3000")
 	log.Println("starting server...")
 	return webServer.ListenAndServe()
 }
