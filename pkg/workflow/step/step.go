@@ -1,8 +1,10 @@
 package step
 
 import (
+	"fmt"
 	"github.com/longsolong/flow/pkg/workflow"
 	"github.com/google/uuid"
+	"reflect"
 )
 
 type Step interface {
@@ -29,16 +31,26 @@ type Return struct {
 	Error  error  // Go error
 }
 
+
+func GenType(s Step) string {
+	empty := reflect.TypeOf(s).Elem()
+	return fmt.Sprintf("%s.%s", empty.PkgPath(), empty.Name())
+}
+
 type Atom struct {
 	id Id
 	status string
 }
 
-func (atom Atom) Id() Id {
+func (atom *Atom) Id() Id {
 	return atom.id
 }
 
-func (atom Atom) Create(ctx workflow.Context) error {
+func (atom *Atom) SetId(id Id) {
+	atom.id = id
+}
+
+func (atom *Atom) Create(ctx workflow.Context) error {
 	args, err := atom.NewArgs(ctx)
 	if err != nil {
 		return err
@@ -46,19 +58,19 @@ func (atom Atom) Create(ctx workflow.Context) error {
 	return atom.New(args...)
 }
 
-func (atom Atom) Run(ctx workflow.Context) error {
+func (atom *Atom) Run(ctx workflow.Context) error {
 	return nil
 }
 
-func (atom Atom) NewArgs(ctx workflow.Context) ([]interface{}, error) {
+func (atom *Atom) NewArgs(ctx workflow.Context) ([]interface{}, error) {
 	return nil, nil
 }
 
-func (atom Atom) New(arg ...interface{}) error {
+func (atom *Atom) New(arg ...interface{}) error {
 	return nil
 }
 
-func (atom Atom) Stop() error {
+func (atom *Atom) Stop() error {
 	return nil
 }
 
@@ -66,6 +78,6 @@ func (atom *Atom) Status() string {
 	return atom.status
 }
 
-func (atom *Atom) setStatus(msg string) {
+func (atom *Atom) SetStatus(msg string) {
 	atom.status = msg
 }
