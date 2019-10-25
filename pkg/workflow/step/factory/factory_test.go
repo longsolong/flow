@@ -1,14 +1,15 @@
 package factory
 
 import (
+	"testing"
+
 	"github.com/longsolong/flow/pkg/workflow"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestEchoCommandType(t *testing.T) {
 	echo := NewEchoCommand("echo hello")
-	assert.Equal(t, "github.com/longsolong/flow/pkg/workflow/step/command.EchoCommand", echo.Type)
+	assert.Equal(t, "github.com/longsolong/flow/pkg/workflow/step/builtin/command.EchoCommand", echo.Type)
 }
 
 func TestEchoCommandRun(t *testing.T) {
@@ -21,5 +22,3 @@ func TestEchoCommandRun(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, workflow.Return{}, ret)
 }
-
-
