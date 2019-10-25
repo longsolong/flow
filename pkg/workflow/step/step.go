@@ -3,7 +3,6 @@ package step
 import (
 	"fmt"
 	"github.com/longsolong/flow/pkg/workflow"
-	"github.com/google/uuid"
 	"reflect"
 )
 
@@ -15,14 +14,6 @@ type Step interface {
 	Stop() error
 
 	Status() string
-
-	Id() Id
-}
-
-type Id struct {
-	Type string
-
-	Uuid uuid.UUID
 }
 
 type Return struct {
@@ -38,16 +29,8 @@ func GenType(s Step) string {
 }
 
 type Atom struct {
-	id Id
+	Type string
 	status string
-}
-
-func (atom *Atom) Id() Id {
-	return atom.id
-}
-
-func (atom *Atom) SetId(id Id) {
-	atom.id = id
 }
 
 func (atom *Atom) Create(ctx workflow.Context) error {

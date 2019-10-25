@@ -10,8 +10,7 @@ type EchoCommand struct {
 }
 
 func NewEchoCommand(uuid uuid.UUID) *EchoCommand {
-	id := step.Id{Uuid: uuid, Type: step.GenType((*EchoCommand)(nil))}
 	echo := &EchoCommand{}
-	echo.SetId(id)
+	echo.Type = step.GenType((*EchoCommand)(nil))
 	return echo
 }

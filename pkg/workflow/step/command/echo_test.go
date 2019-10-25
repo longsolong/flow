@@ -8,7 +8,7 @@ import (
 
 func TestEchoCommandType(t *testing.T) {
 	echo := NewEchoCommand(uuid.New())
-	assert.Equal(t, "github.com/longsolong/flow/pkg/workflow/step/command.EchoCommand", echo.Id().Type)
+	assert.Equal(t, "github.com/longsolong/flow/pkg/workflow/step/command.EchoCommand", echo.Type)
 
 
 	/*
