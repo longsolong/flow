@@ -1,16 +1,15 @@
 package command
 
 import (
-	"github.com/google/uuid"
-	"github.com/longsolong/flow/pkg/workflow/step"
+	"github.com/longsolong/flow/pkg/workflow"
+	"os/exec"
 )
 
 type EchoCommand struct {
 	ShellCommand
 }
 
-func NewEchoCommand(uuid uuid.UUID) *EchoCommand {
-	echo := &EchoCommand{}
-	echo.Type = step.GenType((*EchoCommand)(nil))
-	return echo
+func (echo *EchoCommand) Create(ctx workflow.Context) error {
+	echo.Cmd = exec.Command("echo", "hello")
+	return nil
 }

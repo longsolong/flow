@@ -1,12 +1,12 @@
 package state
 
 const (
-	STATE_UNKNOWN byte = 0
+	STATE_UNKNOWN byte = 0xff
 
 	// Normal states, in order
-	STATE_RUNNING  byte = 1 // running
-	STATE_SUCCESS  byte = 2 // completed successfully
-	STATE_FAIL     byte = 3 // failed
+	STATE_SUCCESS  byte = 0 // completed successfully
+	STATE_FAIL     byte = 1 // failed
+	STATE_RUNNING  byte = 2 // running
 )
 
 var StateName = map[byte]string{
