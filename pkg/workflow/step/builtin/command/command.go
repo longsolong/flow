@@ -8,7 +8,7 @@ import (
 	"github.com/longsolong/flow/pkg/workflow/step"
 )
 
-// ShellCommand is a step that runs a single shell command with arguments.
+// ShellCommand is a Step that runs a single shell command with arguments.
 type ShellCommand struct {
 	step.Step
 
@@ -18,17 +18,15 @@ type ShellCommand struct {
 // Run a shell
 func (s *ShellCommand) Run(ctx workflow.Context) (workflow.Return, error) {
 	// Run the cmd and wait for it to return
-	exit := int64(0)
 	err := s.Cmd.Run()
 	ret := workflow.Return{
-		Exit:  exit,
 		Error: err,
 	}
 	if err != nil {
 		ret.Exit = 1
-		ret.State = state.STATE_FAIL
+		ret.State = state.StateFail
 	} else {
-		ret.State = state.STATE_SUCCESS
+		ret.State = state.StateSuccess
 	}
 
 	return ret, nil

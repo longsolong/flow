@@ -13,6 +13,7 @@ type EchoCommand struct {
 
 // Create ...
 func (echo *EchoCommand) Create(ctx workflow.Context) error {
+	// TODO parse args from ctx
 	echo.Cmd = exec.Command("echo", "hello")
 	return nil
 }

@@ -13,13 +13,13 @@ type Runnable interface {
 
 // Return ...
 type Return struct {
-	State byte  // STATE_ const
+	State byte  // State const
 	Exit  int64 // Unix exit code
 	Error error // Go error
 }
 
 // GenRunnableType ...
-func GenRunnableType(r Runnable) string {
+func GenRunnableType(r Runnable, prefix string) string {
 	e := reflect.TypeOf(r).Elem()
-	return fmt.Sprintf("%s.%s", e.PkgPath(), e.Name())
+	return fmt.Sprintf("%s/%s", prefix, e.String())
 }
