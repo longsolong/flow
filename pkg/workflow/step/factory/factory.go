@@ -7,17 +7,17 @@ import (
 )
 
 // NewEchoCommand ...
-func NewEchoCommand(desc string) *command.EchoCommand {
+func NewEchoCommand(name string) *command.EchoCommand {
 	echo := &command.EchoCommand{}
-	echo.Description = desc
-	echo.Type = workflow.GenRunnableType(echo, "builtin")
+	echo.ID.Name = name
+	echo.ID.Type = workflow.GenRunnableType(echo, "builtin")
 	return echo
 }
 
 // NewSleep ...
-func NewSleep(desc string) *builtin.Sleep {
+func NewSleep(name string) *builtin.Sleep {
 	s := &builtin.Sleep{}
-	s.Description = desc
-	s.Type = workflow.GenRunnableType(s, "builtin")
+	s.ID.Name = name
+	s.ID.Type = workflow.GenRunnableType(s, "builtin")
 	return s
 }

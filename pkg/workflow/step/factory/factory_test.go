@@ -9,7 +9,7 @@ import (
 
 func TestEchoCommandType(t *testing.T) {
 	echo := NewEchoCommand("echo hello")
-	assert.Equal(t, "builtin/command.EchoCommand", echo.Type)
+	assert.Equal(t, "builtin/command.EchoCommand", echo.ID.Type)
 }
 
 func TestEchoCommandRun(t *testing.T) {
