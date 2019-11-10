@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/marvincaspar/go-web-app-boilerplate/test"
+	"github.com/longsolong/flow/test"
 )
 
 func TestCreateHandler(t *testing.T) {

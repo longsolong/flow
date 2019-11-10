@@ -2,8 +2,8 @@ package rest
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/http/rest/middleware"
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/infra"
+	"github.com/longsolong/flow/pkg/http/rest/middleware"
+	"github.com/longsolong/flow/pkg/infra"
 )
 
 // Handler handles http rest requests

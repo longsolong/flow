@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/infra"
+	"github.com/longsolong/flow/pkg/infra"
 )
 
 // Middleware wrapps all middlewares

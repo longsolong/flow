@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"github.com/marvincaspar/go-web-app-boilerplate/test"
+
 	"github.com/gorilla/mux"
+	"github.com/longsolong/flow/test"
 )
 
 func TestJSONResponseMiddleware(t *testing.T) {

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/http/rest"
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/infra"
+	"github.com/longsolong/flow/pkg/http/rest"
+	"github.com/longsolong/flow/pkg/infra"
 )
 
 func main() {

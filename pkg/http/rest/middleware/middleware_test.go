@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/marvincaspar/go-web-app-boilerplate/test"
+	"github.com/longsolong/flow/test"
 )
 
 func TestCreateMiddleware(t *testing.T) {

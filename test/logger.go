@@ -5,7 +5,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/infra"
+	"github.com/longsolong/flow/pkg/infra"
 )
 
 // LoggerMock creates a log mock
