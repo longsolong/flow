@@ -4,16 +4,17 @@ import (
 	"testing"
 
 	"github.com/longsolong/flow/pkg/workflow"
+	"github.com/longsolong/flow/pkg/workflow/step"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEchoCommandType(t *testing.T) {
-	echo := NewEchoCommand("echo hello")
+	echo := NewEchoCommand(step.ID{Name: "echo hello"})
 	assert.Equal(t, "builtin/command.EchoCommand", echo.ID.Type)
 }
 
 func TestEchoCommandRun(t *testing.T) {
-	echo := NewEchoCommand("echo hello")
+	echo := NewEchoCommand(step.ID{Name: "echo hello"})
 	var ctx workflow.Context
 	err := echo.Create(ctx)
 	assert.Nil(t, err)
@@ -24,7 +25,7 @@ func TestEchoCommandRun(t *testing.T) {
 }
 
 func TestSleepRun(t *testing.T) {
-	sleep := NewSleep("sleep 1ms")
+	sleep := NewSleep(step.ID{Name: "sleep 1ms"})
 	var ctx workflow.Context
 	err := sleep.Create(ctx)
 	assert.Nil(t, err)

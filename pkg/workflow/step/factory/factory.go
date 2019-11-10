@@ -2,22 +2,31 @@ package factory
 
 import (
 	"github.com/longsolong/flow/pkg/workflow"
+	"github.com/longsolong/flow/pkg/workflow/step"
 	"github.com/longsolong/flow/pkg/workflow/step/builtin"
 	"github.com/longsolong/flow/pkg/workflow/step/builtin/command"
 )
 
 // NewEchoCommand ...
-func NewEchoCommand(name string) *command.EchoCommand {
+func NewEchoCommand(id step.ID) *command.EchoCommand {
 	echo := &command.EchoCommand{}
-	echo.ID.Name = name
+	echo.ID = id
 	echo.ID.Type = workflow.GenRunnableType(echo, "builtin")
 	return echo
 }
 
 // NewSleep ...
-func NewSleep(name string) *builtin.Sleep {
+func NewSleep(id step.ID) *builtin.Sleep {
 	s := &builtin.Sleep{}
-	s.ID.Name = name
+	s.ID = id
 	s.ID.Type = workflow.GenRunnableType(s, "builtin")
 	return s
+}
+
+// NewNoop ...
+func NewNoop(id step.ID) *builtin.Noop {
+	n := &builtin.Noop{}
+	n.ID = id
+	n.ID.Type = workflow.GenRunnableType(n, "builtin")
+	return n
 }
