@@ -1,6 +1,7 @@
 package command
 
 import (
+	"github.com/longsolong/flow/pkg/workflow/atom"
 	"os/exec"
 
 	"github.com/longsolong/flow/pkg/workflow"
@@ -16,10 +17,10 @@ type ShellCommand struct {
 }
 
 // Run a shell
-func (s *ShellCommand) Run(ctx workflow.Context) (workflow.Return, error) {
+func (s *ShellCommand) Run(ctx workflow.Context) (atom.Return, error) {
 	// Run the cmd and wait for it to return
 	err := s.Cmd.Run()
-	ret := workflow.Return{
+	ret := atom.Return{
 		Error: err,
 	}
 	if err != nil {

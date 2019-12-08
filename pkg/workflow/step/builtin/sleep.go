@@ -1,6 +1,7 @@
 package builtin
 
 import (
+	"github.com/longsolong/flow/pkg/workflow/atom"
 	"time"
 
 	"github.com/longsolong/flow/pkg/workflow"
@@ -19,6 +20,17 @@ type Sleep struct {
 	stopped  bool
 }
 
+// NewSleep ...
+func NewSleep(id, expansionDigest string) *Sleep {
+	s := &Sleep{}
+	s.SetID(atom.ID{
+		ID: id,
+		ExpansionDigest: expansionDigest,
+		Type: atom.GenRunnableType(s, "builtin"),
+	})
+	return s
+}
+
 // Create ...
 func (s *Sleep) Create(ctx workflow.Context) error {
 	// TODO parse args from ctx
@@ -33,8 +45,8 @@ func (s *Sleep) Create(ctx workflow.Context) error {
 }
 
 // Run a shell
-func (s *Sleep) Run(ctx workflow.Context) (workflow.Return, error) {
-	ret := workflow.Return{}
+func (s *Sleep) Run(ctx workflow.Context) (atom.Return, error) {
+	ret := atom.Return{}
 
 	select {
 	case <-time.After(s.Duration):

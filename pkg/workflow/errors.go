@@ -5,9 +5,12 @@ import (
 )
 
 var (
-	// ErrAlreadyRegisteredStep ...
-	ErrAlreadyRegisteredStep = errors.New("already registered step")
+	// ErrAlreadyRegisteredNode ...
+	ErrAlreadyRegisteredNode = errors.New("already registered node")
 
 	// ErrAlreadyRegisteredUpstream ...
 	ErrAlreadyRegisteredUpstream = errors.New("already registered upstream")
+
+	// ErrAlreadyRegisteredDownstream ...
+	ErrAlreadyRegisteredDownstream = errors.New("already registered downstream")
 )
