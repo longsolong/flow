@@ -1,16 +1,13 @@
-package rest
+package flow
 
 import (
 	"io"
 	"net/http"
 )
 
-// NewHealthCheckHandler add route for healthcheck
-func (h *Handler) NewHealthCheckHandler() {
-	h.router.Get("/health", healthCheckHandler)
-}
 
-func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+// CreateFlow ...
+func CreateFlow(w http.ResponseWriter, r *http.Request) {
 	// A very simple health check.
 	w.WriteHeader(http.StatusOK)
 

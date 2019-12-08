@@ -1,31 +1,54 @@
 package middleware
 
 import (
+	"fmt"
+	"github.com/go-chi/chi/middleware"
+	"go.uber.org/zap/zapcore"
 	"net/http"
-	"strconv"
 	"time"
 
 	"go.uber.org/zap"
 )
 
-// Logging logs the request time
-func (mw *Middleware) Logging(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+type chilogger struct {
+	logZ *zap.Logger
+	name string
+}
+
+// NewZapMiddleware returns a new Zap Middleware handler.
+func NewZapMiddleware(name string, logger *zap.Logger) func(next http.Handler) http.Handler {
+	return chilogger{
+		logZ: logger,
+		name: name,
+	}.middleware
+}
+
+func (c chilogger) middleware(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		defer func() {
+		var requestID string
+		if reqID := r.Context().Value(middleware.RequestIDKey); reqID != nil {
+			requestID = reqID.(string)
+		}
+		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+		next.ServeHTTP(ww, r)
 
-			duration := time.Since(start)
-			durationInMs := duration.Nanoseconds() / 1000000
-			mw.logger.WithFields(
-				zap.String("component", "Middleware"),
+		latency := time.Since(start)
+
+		if c.logZ != nil {
+			fields := []zapcore.Field{
+				zap.Int("status", ww.Status()),
+				zap.Duration("took", latency),
+				zap.Int64(fmt.Sprintf("measure#%s.latency", c.name), latency.Nanoseconds()),
+				zap.String("remote", r.RemoteAddr),
+				zap.String("request", r.RequestURI),
 				zap.String("method", r.Method),
-				zap.String("url", r.URL.Path),
-				zap.Int("status", http.StatusOK),
-				zap.Int64("res[content-length]", r.ContentLength),
-				zap.String("response-time", strconv.Itoa(int(durationInMs))+"ms"),
-			).Info("Request logging")
-		}()
-
-		next.ServeHTTP(w, r)
-	})
+			}
+			if requestID != "" {
+				fields = append(fields, zap.String("request-id", requestID))
+			}
+			c.logZ.Info("request completed", fields...)
+		}
+	}
+	return http.HandlerFunc(fn)
 }
