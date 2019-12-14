@@ -2,10 +2,9 @@ package rest
 
 import (
 	"github.com/go-chi/chi"
+	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/longsolong/flow/pkg/http/rest/middleware"
 	"github.com/longsolong/flow/pkg/infra"
-	chimiddleware "github.com/go-chi/chi/middleware"
-	"github.com/go-chi/render"
 )
 
 // Handler handles http rest requests
@@ -33,7 +32,6 @@ func CreateHandler(l *infra.Logger) *Handler {
 	h.router.Use(chimiddleware.RealIP)
 	h.router.Use(middleware.NewZapMiddleware("router", l.Log))
 	h.router.Use(middleware.Recoverer)
-	h.router.Use(render.SetContentType(render.ContentTypeJSON))
 
 	return h
 }

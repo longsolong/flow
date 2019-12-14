@@ -1,7 +1,9 @@
 package builtin
 
 import (
-	"github.com/longsolong/flow/pkg/workflow"
+	"context"
+	"github.com/longsolong/flow/pkg/orchestration/request"
+
 	"github.com/longsolong/flow/pkg/workflow/atom"
 	"github.com/longsolong/flow/pkg/workflow/step"
 )
@@ -20,17 +22,17 @@ func NewNoop(id atom.ID) *Noop {
 }
 
 // Create ...
-func (s *Noop) Create(ctx workflow.Context) error {
+func (s *Noop) Create(ctx context.Context, req *request.Request) error {
 	return nil
 }
 
 // Run ...
-func (s *Noop) Run(ctx workflow.Context) (atom.Return, error) {
+func (s *Noop) Run(ctx context.Context) (atom.Return, error) {
 	ret := atom.Return{}
 	return ret, nil
 }
 
 // Stop run
-func (s *Noop) Stop(ctx workflow.Context) error {
+func (s *Noop) Stop(ctx context.Context) error {
 	return nil
 }

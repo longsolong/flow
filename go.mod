@@ -6,10 +6,8 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/faceair/jio v0.0.0-20190529061307-eb5cc96c84e7
 	github.com/go-chi/chi v4.0.2+incompatible
-	github.com/go-chi/render v1.0.1
 	github.com/go-chi/valve v0.0.0-20170920024740-9e45288364f4
 	github.com/google/uuid v1.1.1
-	github.com/gorilla/mux v1.7.2
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sparrc/go-ping v0.0.0-20190613174326-4e5b6552494c

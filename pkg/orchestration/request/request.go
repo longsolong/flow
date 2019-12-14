@@ -1,24 +1,43 @@
 package request
 
-import "github.com/google/uuid"
+import (
+	"context"
+	"github.com/google/uuid"
+)
 
 // Request ...
 type Request struct {
 	RequestUUID uuid.UUID
-	PrimaryRequestArgs map[string]interface{}
-	PrimaryRequestTags []Tag
+	RequestArgs map[string]interface{}
+	RequestTags []Tag
+
+	ctx context.Context
 }
 
 // NewRequest ...
 func NewRequest() *Request {
+	return NewRequestWithContext(context.Background())
+}
+
+// NewRequestWithContext ...
+func NewRequestWithContext(ctx context.Context) *Request {
 	req := new(Request)
+	req.ctx = ctx
 	req.RequestUUID = uuid.New()
-	req.PrimaryRequestTags = make([]Tag, 0)
+	req.RequestTags = make([]Tag, 0)
 	return req
 }
 
 // Tag ...
 type Tag struct {
-	Name string
+	Name  string
 	Value string
+}
+
+// Context ...
+func (r *Request) Context() context.Context {
+	if r.ctx != nil {
+		return r.ctx
+	}
+	return context.Background()
 }

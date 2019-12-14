@@ -34,6 +34,7 @@ func run() error {
 	// setup routes
 	restHandler := rest.CreateHandler(logger)
 	restHandler.NewHealthCheckHandler()
+	restHandler.NewFlowHandler()
 
 	// listen and serve
 	// webServer := server.CreateServer(restHandler.GetRouter(), ":"+os.Getenv("HTTP_PORT"))

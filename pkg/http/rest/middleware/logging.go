@@ -10,20 +10,20 @@ import (
 	"go.uber.org/zap"
 )
 
-type chilogger struct {
+type zaplogger struct {
 	logZ *zap.Logger
 	name string
 }
 
 // NewZapMiddleware returns a new Zap Middleware handler.
 func NewZapMiddleware(name string, logger *zap.Logger) func(next http.Handler) http.Handler {
-	return chilogger{
+	return zaplogger{
 		logZ: logger,
 		name: name,
 	}.middleware
 }
 
-func (c chilogger) middleware(next http.Handler) http.Handler {
+func (c zaplogger) middleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		var requestID string

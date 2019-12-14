@@ -1,10 +1,11 @@
 package builtin
 
 import (
-	"github.com/longsolong/flow/pkg/workflow/atom"
+	"context"
+	"github.com/longsolong/flow/pkg/orchestration/request"
 	"time"
 
-	"github.com/longsolong/flow/pkg/workflow"
+	"github.com/longsolong/flow/pkg/workflow/atom"
 	"github.com/longsolong/flow/pkg/workflow/state"
 	"github.com/longsolong/flow/pkg/workflow/step"
 )
@@ -24,15 +25,15 @@ type Sleep struct {
 func NewSleep(id, expansionDigest string) *Sleep {
 	s := &Sleep{}
 	s.SetID(atom.ID{
-		ID: id,
+		ID:              id,
 		ExpansionDigest: expansionDigest,
-		Type: atom.GenRunnableType(s, "builtin"),
+		Type:            atom.GenRunnableType(s, "builtin"),
 	})
 	return s
 }
 
 // Create ...
-func (s *Sleep) Create(ctx workflow.Context) error {
+func (s *Sleep) Create(ctx context.Context, req *request.Request) error {
 	// TODO parse args from ctx
 	durationStr := "1ms"
 	duration, err := time.ParseDuration(durationStr)
@@ -45,7 +46,7 @@ func (s *Sleep) Create(ctx workflow.Context) error {
 }
 
 // Run a shell
-func (s *Sleep) Run(ctx workflow.Context) (atom.Return, error) {
+func (s *Sleep) Run(ctx context.Context) (atom.Return, error) {
 	ret := atom.Return{}
 
 	select {
@@ -59,7 +60,7 @@ func (s *Sleep) Run(ctx workflow.Context) (atom.Return, error) {
 }
 
 // Stop run
-func (s *Sleep) Stop(ctx workflow.Context) error {
+func (s *Sleep) Stop(ctx context.Context) error {
 	if s.stopped {
 		return nil
 	}

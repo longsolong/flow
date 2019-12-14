@@ -1,10 +1,13 @@
 package atom
 
-import "github.com/longsolong/flow/pkg/workflow"
+import (
+	"context"
+	"github.com/longsolong/flow/pkg/orchestration/request"
+)
 
 // Atom ...
 type Atom interface {
-	Create(ctx workflow.Context) error
+	Create(ctx context.Context, req *request.Request) error
 	ID() ID
 }
 

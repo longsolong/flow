@@ -70,6 +70,16 @@ func (g *DAG) AddNode(node *Node) error {
 	return nil
 }
 
+// GetNode ...
+func (g *DAG) GetNode(atomID atom.ID) (*Node, error) {
+	g.VerticesMux.RLock()
+	defer g.VerticesMux.RUnlock()
+	if node, ok := g.Vertices[atomID]; ok {
+		return node, nil
+	}
+	return nil, workflow.ErrNotRegisteredNode
+}
+
 // SetUpstream ...
 func (n *Node) SetUpstream(upstream *Node) error {
 	n.EdgeMux.Lock()

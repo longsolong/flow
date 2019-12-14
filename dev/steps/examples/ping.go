@@ -1,12 +1,12 @@
 package examples
 
 import (
+	"context"
 	"fmt"
 	"github.com/longsolong/flow/pkg/orchestration/request"
 	"github.com/longsolong/flow/pkg/workflow/atom"
 	"time"
 
-	"github.com/longsolong/flow/pkg/workflow"
 	"github.com/longsolong/flow/pkg/workflow/step"
 	ping "github.com/sparrc/go-ping"
 )
@@ -29,10 +29,8 @@ func NewPing(id, expansionDigest string) *Ping {
 }
 
 // Create ...
-func (p *Ping) Create(ctx workflow.Context) error {
-	req := ctx.Request().(*request.Request)
-
-	pinger, err := ping.NewPinger(req.PrimaryRequestArgs["hostname"].(string))
+func (p *Ping) Create(ctx context.Context, req *request.Request) error {
+	pinger, err := ping.NewPinger(req.RequestArgs["hostname"].(string))
 	if err != nil {
 		return err
 	}
@@ -48,22 +46,22 @@ func (p *Ping) Create(ctx workflow.Context) error {
 			stats.MinRtt, stats.AvgRtt, stats.MaxRtt, stats.StdDevRtt)
 	}
 
-	pinger.Count = req.PrimaryRequestArgs["count"].(int)
-	pinger.Interval = time.Second * time.Duration(req.PrimaryRequestArgs["interval"].(int))
-	pinger.Timeout = time.Second * time.Duration(req.PrimaryRequestArgs["timeout"].(int))
+	pinger.Count = req.RequestArgs["count"].(int)
+	pinger.Interval = time.Second * time.Duration(req.RequestArgs["interval"].(int))
+	pinger.Timeout = time.Second * time.Duration(req.RequestArgs["timeout"].(int))
 	p.pinger = pinger
 	return nil
 }
 
 // Run a ping
-func (p *Ping) Run(ctx workflow.Context) (atom.Return, error) {
+func (p *Ping) Run(ctx context.Context) (atom.Return, error) {
 	ret := atom.Return{}
 	p.pinger.Run()
 	return ret, nil
 }
 
 // Stop run
-func (p *Ping) Stop(ctx workflow.Context) error {
+func (p *Ping) Stop(ctx context.Context) error {
 	p.pinger.Stop()
 	return nil
 }

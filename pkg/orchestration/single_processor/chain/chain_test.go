@@ -1,12 +1,10 @@
 package chain
 
 import (
-	"github.com/google/uuid"
 	"github.com/longsolong/flow/pkg/workflow"
 	"github.com/longsolong/flow/pkg/workflow/atom"
 	"github.com/longsolong/flow/pkg/workflow/dag"
 	"github.com/longsolong/flow/pkg/workflow/step/builtin"
-	"github.com/longsolong/flow/pkg/orchestration/single_processor/job"
 	"time"
 
 	"testing"
@@ -15,13 +13,13 @@ import (
 )
 
 func TestNewJobChain(t *testing.T) {
-	requestUUID := uuid.New()
 	d := dag.NewDAG("test noop chain", 1)
-	chain := NewChain(d, requestUUID)
+
+	chain := NewChain(d)
 	noop1 := dag.NewNode(
-		job.NewJob(builtin.NewNoop(atom.ID{ID: "1"}), requestUUID), "noop1", 0, time.Duration(0))
+		builtin.NewNoop(atom.ID{ID: "1"}), "noop1", 0, time.Duration(0))
 	noop2 := dag.NewNode(
-		job.NewJob(builtin.NewNoop(atom.ID{ID: "2"}), requestUUID), "noop2", 0, time.Duration(0))
+		builtin.NewNoop(atom.ID{ID: "2"}), "noop2", 0, time.Duration(0))
 
 	err := chain.AddNode(noop1)
 	assert.Nil(t, err)

@@ -1,8 +1,14 @@
 package rest
 
-import "github.com/longsolong/flow/pkg/http/rest/single_processor/flow"
+import (
+	"github.com/faceair/jio"
+	"github.com/go-chi/chi"
+	"github.com/longsolong/flow/pkg/http/rest/single_processor/flow"
+)
 
 // NewFlowHandler add route for flow
 func (h *Handler) NewFlowHandler() {
-	h.router.Post("/single_processor/flows/create_and_run", flow.CreateFlow)
+	h.router.Route("/api/single_processor/flows", func(r chi.Router) {
+		r.With(jio.ValidateBody(flow.RunFlowValidator, jio.DefaultErrorHandler)).Post("/run", flow.RunFlowHandler)
+	})
 }

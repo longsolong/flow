@@ -2,15 +2,15 @@ package atom
 
 import (
 	"fmt"
-	"github.com/longsolong/flow/pkg/workflow"
 	"github.com/longsolong/flow/pkg/workflow/state"
 	"reflect"
+	"context"
 )
 
 // Runnable ...
 type Runnable interface {
-	Run(ctx workflow.Context) (Return, error)
-	Stop(ctx workflow.Context) error
+	Run(ctx context.Context) (Return, error)
+	Stop(ctx context.Context) error
 }
 
 // Return ...
