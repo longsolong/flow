@@ -23,8 +23,3 @@ func CreateLogger(level int) (*Logger, error) {
 		Log: logger,
 	}, nil
 }
-
-// WithFields creates an entry from the standard logger and adds multiple fields to it
-func (l *Logger) WithFields(fields ...zap.Field) *zap.Logger {
-	return l.Log.With(fields...)
-}

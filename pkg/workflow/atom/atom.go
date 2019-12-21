@@ -2,6 +2,7 @@ package atom
 
 import (
 	"context"
+	"fmt"
 	"github.com/longsolong/flow/pkg/orchestration/request"
 )
 
@@ -18,3 +19,7 @@ type ID struct {
 	ExpansionDigest string
 }
 
+
+func (id ID) String() string {
+	return fmt.Sprintf("Type: %s ID: %s ExpansionDigest: %s", id.Type, id.ID, id.ExpansionDigest)
+}
