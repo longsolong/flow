@@ -7,6 +7,8 @@ type State byte
 const (
 	StateSuccess     State = iota // completed successfully
 	StateFail                     // failed
+	StateException                // exception
+	StateStopped                  // stopped
 	StateRunning                  // running
 	StateCanceled                 // canceled
 	StateWaitInput                // wait input
@@ -21,38 +23,42 @@ const (
 var (
 	// JobState ...
 	JobState = map[State]bool{
-		StateSuccess: true,
-		StateFail: true,
-		StateRunning: true,
-		StateCanceled: true,
-		StateWaitInput: true,
+		StateSuccess:     true,
+		StateFail:        true,
+		StateException:   true,
+		StateStopped:     true,
+		StateRunning:     true,
+		StateCanceled:    true,
+		StateWaitInput:   true,
 		StateMarkSkipped: true,
-		StateIgnored: true,
-		StateUpForRetry: true,
-		StateMarkRetry: true,
-		StateUnknown: true,
+		StateIgnored:     true,
+		StateUpForRetry:  true,
+		StateMarkRetry:   true,
+		StateUnknown:     true,
 	}
 	// JobUndoneState ...
 	JobUndoneState = map[State]bool{
-		StateRunning: true,
-		StateWaitInput: true,
+		StateRunning:    true,
+		StateWaitInput:  true,
 		StateUpForRetry: true,
-		StateMarkRetry: true,
-		StateUnknown: true,
+		StateMarkRetry:  true,
+		StateUnknown:    true,
 	}
 	// JobDoneState ...
 	JobDoneState = map[State]bool{
-		StateSuccess: true,
-		StateFail: true,
-		StateCanceled: true,
+		StateSuccess:     true,
+		StateFail:        true,
+		StateStopped:     true,
+		StateException:   true,
+		StateCanceled:    true,
 		StateMarkSkipped: true,
-		StateIgnored: true,
+		StateIgnored:     true,
 	}
 	// JobCompleteState ...
 	JobCompleteState = map[State]bool{
-		StateSuccess: true,
+		StateSuccess:     true,
 		StateMarkSkipped: true,
-		StateIgnored: true,
+		StateIgnored:     true,
 	}
 )
 
@@ -62,6 +68,8 @@ var StateText = map[State]string{
 	StateRunning:     "RUNNING",
 	StateSuccess:     "SUCCESS",
 	StateFail:        "FAIL",
+	StateException:   "EXCEPTION",
+	StateStopped:     "STOPPED",
 	StateCanceled:    "CANCELED",
 	StateWaitInput:   "WAIT_INPUT",
 	StateMarkSkipped: "MARK_SKIPPED",
@@ -76,6 +84,8 @@ var StateValue = map[string]State{
 	"RUNNING":      StateRunning,
 	"SUCCESS":      StateSuccess,
 	"FAIL":         StateFail,
+	"EXCEPTION":    StateException,
+	"STOPPED":      StateStopped,
 	"CANCELED":     StateCanceled,
 	"WAIT_INPUT":   StateWaitInput,
 	"MARK_SKIPPED": StateMarkSkipped,

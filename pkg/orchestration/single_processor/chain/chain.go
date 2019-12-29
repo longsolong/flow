@@ -160,6 +160,14 @@ func (c *Chain) SequenceStartJob(jobID atom.ID) *job.Job {
 	return c.jobs[c.DAG.Vertices[jobID].SequenceID]
 }
 
+// IsSequenceStartJob ...
+func (c *Chain) IsSequenceStartJob(jobID atom.ID) bool {
+	c.jobsMux.RLock()
+	defer c.jobsMux.RUnlock()
+	return jobID == c.DAG.Vertices[jobID].SequenceID
+}
+
+
 // CanRetrySequence ...
 func (c *Chain) CanRetrySequence(jobID atom.ID) bool {
 	sequenceStartJob := c.SequenceStartJob(jobID)

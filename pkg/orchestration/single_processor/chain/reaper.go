@@ -1,6 +1,9 @@
+// Copyright 2017-2019, Square, Inc.
+
 package chain
 
 import (
+	"context"
 	"github.com/longsolong/flow/pkg/infra"
 	"github.com/longsolong/flow/pkg/orchestration/job"
 	"github.com/longsolong/flow/pkg/workflow/atom"
@@ -28,11 +31,28 @@ type RunningChainReaper struct {
 	runJobChan chan job.Job // enqueue next jobs to run here
 }
 
+// NewRunningChainReaper ...
+func NewRunningChainReaper(c *Chain, logger *infra.Logger) *RunningChainReaper {
+	return &RunningChainReaper{
+		reaper: reaper{
+			chain:  c,
+			logger: logger,
+
+			stopMux:  &sync.Mutex{},
+			stopChan: make(chan struct{}),
+
+			doneChan:    make(chan struct{}),
+			doneJobChan: make(chan job.Job),
+		},
+		runJobChan: make(chan job.Job),
+	}
+}
+
 // Run reaps jobs when they finish running. For each job reaped, if...
 // - chain is done: save final state .
 // - job failed:    retry sequence if possible.
 // - job completed: prepared subsequent jobs and enqueue if runnable.
-func (r *RunningChainReaper) Run() {
+func (r *RunningChainReaper) Run(ctx context.Context) {
 	defer close(r.doneChan)
 
 	// If the chain is already done, skip straight to finalizing.
@@ -62,7 +82,7 @@ REAPER:
 
 // Stop stops the reaper from reaping any more jobs. It blocks until the reaper
 // is stopped (will reap no more jobs and Run will return).
-func (r *RunningChainReaper) Stop() {
+func (r *RunningChainReaper) Stop(ctx context.Context) {
 	r.stopMux.Lock()
 	defer r.stopMux.Unlock()
 	if r.stopped {
@@ -95,6 +115,7 @@ func (r *RunningChainReaper) Reap(job *job.Job) {
 	if _, ok := state.JobCompleteState[job.State]; ok {
 		for _, nextJob := range r.chain.NextJobs(job.ID()) {
 			nextFields := append([]zapcore.Field(nil), fields...)
+			nextFields = append(nextFields, zap.String("next_job_id", nextJob.ID().String()))
 
 			if !r.chain.IsRunnable(nextJob.ID()) {
 				logger.Info("next job not runnable", nextFields...)
@@ -153,13 +174,7 @@ func (r *reaper) prepareSequenceRetry(failedJob *job.Job) *job.Job {
 	}
 
 	// Roll back completed sequence jobs
-	finishedJobs := 0
 	for _, j := range sequenceJobsToRetry {
-		jobState := r.chain.JobState(j.ID())
-		if _, ok := state.JobCompleteState[jobState]; ok {
-			finishedJobs++
-		}
-
 		// Roll back job state to pending so it's runnable again
 		r.chain.SetJobState(j.ID(), state.StateUpForRetry)
 	}
@@ -190,7 +205,7 @@ PROCESS_TO_VISIT_LIST:
 
 		PROCESS_NEXT_JOBS:
 			for _, nextJob := range r.chain.NextJobs(currentJobID) {
-				// Don't add failed or pending jobs to toVisit list
+				// Don't add failed or unknown jobs to toVisit list
 				// For example, if job C of A -> B -> C -> D fails, then do not add C
 				// or D to toVisit list. Because we have single sequence retries,
 				// stopping at the failed job ensures we do not add jobs not in the

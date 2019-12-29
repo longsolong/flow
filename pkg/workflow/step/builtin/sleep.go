@@ -45,7 +45,7 @@ func (s *Sleep) Create(ctx context.Context, req *request.Request) error {
 	return nil
 }
 
-// Run a shell
+// Run ...
 func (s *Sleep) Run(ctx context.Context) (atom.Return, error) {
 	ret := atom.Return{}
 

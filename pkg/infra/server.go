@@ -23,7 +23,7 @@ func CreateServer(router chi.Router, serverAddress string, options ...func(*http
 		IdleTimeout:  120 * time.Second,
 		Handler:      chi.ServerBaseContext(baseCtx, router),
 	}
-	for _, option := range(options) {
+	for _, option := range options {
 		option(server)
 	}
 	return server
