@@ -13,34 +13,34 @@ import (
 type Chain struct {
 	*dag.DAG
 
-	jobs          map[atom.ID]*job.Job
-	jobsMux       *sync.RWMutex    // for access to jobs maps
-	triesMux      *sync.RWMutex    // for access to sequence/job tries maps
-	sequenceTries map[atom.ID]uint // Number of sequence retries attempted so far
-	totalJobTries map[atom.ID]uint // Number of job retries attempted so far
+	jobs          map[atom.AtomID]*job.Job
+	jobsMux       *sync.RWMutex        // for access to jobs maps
+	triesMux      *sync.RWMutex        // for access to sequence/job tries maps
+	sequenceTries map[atom.AtomID]uint // Number of sequence retries attempted so far
+	totalJobTries map[atom.AtomID]uint // Number of job retries attempted so far
 }
 
 // NewChain ...
 func NewChain(d *dag.DAG) *Chain {
 	return &Chain{
 		DAG:           d,
-		jobs:          make(map[atom.ID]*job.Job),
+		jobs:          make(map[atom.AtomID]*job.Job),
 		jobsMux:       &sync.RWMutex{},
 		triesMux:      &sync.RWMutex{},
-		sequenceTries: make(map[atom.ID]uint),
-		totalJobTries: make(map[atom.ID]uint),
+		sequenceTries: make(map[atom.AtomID]uint),
+		totalJobTries: make(map[atom.AtomID]uint),
 	}
 }
 
 // JobState returns the state of a given job.
-func (c *Chain) JobState(atomID atom.ID) state.State {
+func (c *Chain) JobState(atomID atom.AtomID) state.State {
 	c.jobsMux.RLock()
 	defer c.jobsMux.RUnlock()
 	return c.jobs[atomID].State
 }
 
 // SetJobState set the state of a job in the chain.
-func (c *Chain) SetJobState(atomID atom.ID, state state.State) {
+func (c *Chain) SetJobState(atomID atom.AtomID, state state.State) {
 	c.jobsMux.Lock()
 	defer c.jobsMux.Unlock()
 	c.jobs[atomID].State = state
@@ -50,11 +50,11 @@ func (c *Chain) SetJobState(atomID atom.ID, state state.State) {
 func (c *Chain) AddJob(j *job.Job) {
 	c.jobsMux.Lock()
 	defer c.jobsMux.Unlock()
-	c.jobs[j.ID()] = j
+	c.jobs[j.StepID()] = j
 }
 
 // NextJobs finds all of the jobs adjacent to the given job.
-func (c *Chain) NextJobs(jobID atom.ID) []*job.Job {
+func (c *Chain) NextJobs(jobID atom.AtomID) []*job.Job {
 	c.jobsMux.RLock()
 	defer c.jobsMux.RUnlock()
 	var nextJobs []*job.Job
@@ -73,7 +73,7 @@ func (c *Chain) NextJobs(jobID atom.ID) []*job.Job {
 }
 
 // IsRunnable ...
-func (c *Chain) IsRunnable(jobID atom.ID) bool {
+func (c *Chain) IsRunnable(jobID atom.AtomID) bool {
 	c.DAG.VerticesMux.RLock()
 	defer c.DAG.VerticesMux.RUnlock()
 	return c.isRunnable(jobID)
@@ -115,7 +115,7 @@ func (c *Chain) IsDoneRunning() (done bool, complete bool) {
 			continue
 		}
 		if j.State == state.StateUnknown {
-			if c.isRunnable(j.ID()) {
+			if c.isRunnable(j.StepID()) {
 				return false, false
 			}
 		} else if _, ok := state.JobUndoneState[j.State]; ok {
@@ -129,7 +129,7 @@ func (c *Chain) IsDoneRunning() (done bool, complete bool) {
 
 // isRunnable returns true if the job is runnable. A job is runnable iff its
 // state is StateUnknown || StateUpForRetry || StateMarkRetry and all immediately previous jobs are state COMPLETE.
-func (c *Chain) isRunnable(jobID atom.ID) bool {
+func (c *Chain) isRunnable(jobID atom.AtomID) bool {
 	// CALLER MUST LOCK c.DAG.VerticesMux!
 	var node *dag.Node
 	var j *job.Job
@@ -154,30 +154,29 @@ func (c *Chain) isRunnable(jobID atom.ID) bool {
 }
 
 // SequenceStartJob ...
-func (c *Chain) SequenceStartJob(jobID atom.ID) *job.Job {
+func (c *Chain) SequenceStartJob(jobID atom.AtomID) *job.Job {
 	c.jobsMux.RLock()
 	defer c.jobsMux.RUnlock()
 	return c.jobs[c.DAG.Vertices[jobID].SequenceID]
 }
 
 // IsSequenceStartJob ...
-func (c *Chain) IsSequenceStartJob(jobID atom.ID) bool {
+func (c *Chain) IsSequenceStartJob(jobID atom.AtomID) bool {
 	c.jobsMux.RLock()
 	defer c.jobsMux.RUnlock()
 	return jobID == c.DAG.Vertices[jobID].SequenceID
 }
 
-
 // CanRetrySequence ...
-func (c *Chain) CanRetrySequence(jobID atom.ID) bool {
+func (c *Chain) CanRetrySequence(jobID atom.AtomID) bool {
 	sequenceStartJob := c.SequenceStartJob(jobID)
 	c.triesMux.RLock()
 	defer c.triesMux.RUnlock()
-	return c.sequenceTries[sequenceStartJob.ID()] <= c.DAG.Vertices[sequenceStartJob.ID()].SequenceRetry
+	return c.sequenceTries[sequenceStartJob.StepID()] <= c.DAG.Vertices[sequenceStartJob.StepID()].SequenceRetry
 }
 
 // IncrementJobTries ...
-func (c *Chain) IncrementJobTries(jobID atom.ID, delta uint) {
+func (c *Chain) IncrementJobTries(jobID atom.AtomID, delta uint) {
 	c.triesMux.Lock()
 	defer c.triesMux.Unlock()
 	// Total job tries can only increase. This is the job try count
@@ -186,14 +185,14 @@ func (c *Chain) IncrementJobTries(jobID atom.ID, delta uint) {
 }
 
 // JobTries ...
-func (c *Chain) JobTries(jobID atom.ID) uint {
+func (c *Chain) JobTries(jobID atom.AtomID) uint {
 	c.triesMux.RLock()
 	defer c.triesMux.RUnlock()
 	return c.totalJobTries[jobID]
 }
 
 // IncrementSequenceTries ...
-func (c *Chain) IncrementSequenceTries(jobID atom.ID, delta uint) {
+func (c *Chain) IncrementSequenceTries(jobID atom.AtomID, delta uint) {
 	seqID := c.DAG.Vertices[jobID].SequenceID
 	c.triesMux.Lock()
 	c.sequenceTries[seqID] += delta
@@ -201,7 +200,7 @@ func (c *Chain) IncrementSequenceTries(jobID atom.ID, delta uint) {
 }
 
 // SequenceTries ...
-func (c *Chain) SequenceTries(jobID atom.ID) uint {
+func (c *Chain) SequenceTries(jobID atom.AtomID) uint {
 	seqID := c.DAG.Vertices[jobID].SequenceID
 	c.triesMux.RLock()
 	defer c.triesMux.RUnlock()

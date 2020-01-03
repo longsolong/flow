@@ -24,11 +24,9 @@ type Sleep struct {
 // NewSleep ...
 func NewSleep(id, expansionDigest string) *Sleep {
 	s := &Sleep{}
-	s.SetID(atom.ID{
-		ID:              id,
-		ExpansionDigest: expansionDigest,
-		Type:            atom.GenRunnableType(s, "builtin"),
-	})
+	s.ID = id
+	s.ExpansionDigest = expansionDigest
+	s.Type = atom.GenAtomType(s)
 	return s
 }
 

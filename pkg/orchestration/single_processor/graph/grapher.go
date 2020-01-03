@@ -2,48 +2,28 @@ package graph
 
 import (
 	"github.com/longsolong/flow/pkg/orchestration/request"
-
 	"github.com/longsolong/flow/pkg/orchestration/single_processor/chain"
 	"github.com/longsolong/flow/pkg/workflow/dag"
 )
 
-type (
-	buildRequestFunc            func(rawRequestData []byte) (*request.Request, error)
-)
-
 // Grapher ...
 type Grapher struct {
-	req   *request.Request
-	dag   *dag.DAG
-	chain *chain.Chain
-	plotter Plotter
+	Req *request.Request
 
-	buildRequest buildRequestFunc
+	*dag.DAG
+	*chain.Chain
+	GraphPlotter
 }
 
 // NewGrapher A new Grapher should be made for every request.
 func NewGrapher(
-	name string, version int,
-	rawRequestData []byte,
-	buildRequest buildRequestFunc,
-	plotter Plotter) (*Grapher, error) {
+	req *request.Request, d *dag.DAG, c *chain.Chain, p GraphPlotter) *Grapher {
 
 	g := &Grapher{
-		buildRequest: buildRequest,
-		plotter: plotter,
+		Req: req,
+		DAG: d,
+		Chain: c,
+		GraphPlotter: p,
 	}
-	req, err := (g.buildRequest)(rawRequestData)
-	if err != nil {
-		return nil, err
-	}
-	g.req = req
-
-	d, c, err := g.plotter.Begin(name, version, req)
-	if err != nil {
-		return nil, err
-	}
-	g.dag = d
-	g.chain = c
-
-	return g, nil
+	return g
 }

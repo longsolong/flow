@@ -1,12 +1,14 @@
 // +build integration
 
-package flow
+package rest
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/longsolong/flow/pkg/infra"
 )
 
 func TestRunFlowHandler(t *testing.T) {
@@ -14,6 +16,7 @@ func TestRunFlowHandler(t *testing.T) {
 	uri := "/api/single_processor/flows/run"
 	payload := `{
 		"primaryRequestArgs": {
+			"namespace": "single_processor_examples",
 			"name": "ping",
 			"version": 1
 		},
@@ -35,9 +38,14 @@ func TestRunFlowHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	logger, err := infra.CreateLogger(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(RunFlowHandler)
+	handler := http.HandlerFunc(SingleProcessorFlowHandler{logger: logger}.Run())
 
 	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
 	// directly and pass in our Request and ResponseRecorder.

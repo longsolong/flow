@@ -1,10 +1,9 @@
 package atom
 
 import (
-	"fmt"
+	"context"
 	"github.com/longsolong/flow/pkg/workflow/state"
 	"reflect"
-	"context"
 )
 
 // Runnable ...
@@ -20,9 +19,9 @@ type Return struct {
 	Error error       // Go error
 }
 
-// GenRunnableType ...
-func GenRunnableType(r Runnable, prefix string) string {
+// GenAtomType ...
+func GenAtomType(r Runnable) string {
 	e := reflect.TypeOf(r).Elem()
-	return fmt.Sprintf("%s/%s", prefix, e.String())
+	return e.String()
 }
 

@@ -1,25 +1,40 @@
 package workflows
 
 import (
+	"context"
 	"fmt"
+	"time"
+
 	"github.com/longsolong/flow/dev/workflows/single_processor_examples/ping"
+	"github.com/longsolong/flow/pkg/infra"
 	"github.com/longsolong/flow/pkg/orchestration/single_processor/graph"
+	"github.com/longsolong/flow/pkg/orchestration/single_processor/traverser"
 )
 
 // SingleProcessorFactory ...
 var SingleProcessorFactory = singleProcessorFactory{}
 
-// singleProcessorFactory implements the SingleProcessorFactory interface.
-type singleProcessorFactory struct {}
+// singleProcessorFactory ...
+type singleProcessorFactory struct{}
 
 // Make
-func (gf *singleProcessorFactory) Make(namespace, name string, version int, rawRequestData []byte) (*graph.Grapher, error) {
+func (gf *singleProcessorFactory) Make(ctx context.Context, logger *infra.Logger, namespace, name string, version int, rawRequestData []byte) (g *graph.Grapher, err error) {
 	if namespace == "single_processor_examples" {
-		if name == ping.NAME && version == ping.VERSION {
-			return ping.NewGrapher(rawRequestData)
+		switch {
+		case name == ping.NAME && version == ping.VERSION:
+			g, err = ping.NewGrapher(ctx, rawRequestData)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			return nil, fmt.Errorf("unknown dag name %s version %d", name, version)
 		}
-		return nil, fmt.Errorf("unknown dag name %s version %d", name, version)
+	} else {
+		return nil, fmt.Errorf("unknown namespace %s", namespace)
 	}
-	return nil, fmt.Errorf("unknown namespace %s", namespace)
-}
+	t := traverser.NewTraverser(g, logger, time.Duration(10)*time.Second, time.Duration(10)*time.Second)
+	go g.GraphPlotter.Grow(ctx)
+	t.Run(ctx)
 
+	return g, nil
+}

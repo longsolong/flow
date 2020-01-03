@@ -41,3 +41,15 @@ func (r *Request) Context() context.Context {
 	}
 	return context.Background()
 }
+
+// WithContext returns a shallow copy of r with its context changed
+// to ctx. The provided ctx must be non-nil.
+func (r *Request) WithContext(ctx context.Context) *Request {
+	if ctx == nil {
+		panic("nil context")
+	}
+	r2 := new(Request)
+	*r2 = *r
+	r2.ctx = ctx
+	return r2
+}

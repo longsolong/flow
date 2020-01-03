@@ -1,15 +1,15 @@
 // Copyright 2017-2019, Square, Inc.
 
-package chain
+package traverser
 
 import (
 	"context"
 	"fmt"
 	"github.com/longsolong/flow/pkg/infra"
 	"github.com/longsolong/flow/pkg/orchestration/job"
-	"github.com/longsolong/flow/pkg/orchestration/job_runner/chain"
+	"github.com/longsolong/flow/pkg/orchestration/job_runner/traverser"
 	"github.com/longsolong/flow/pkg/orchestration/job_runner/runner"
-	"github.com/longsolong/flow/pkg/orchestration/request"
+	"github.com/longsolong/flow/pkg/orchestration/single_processor/graph"
 	"github.com/longsolong/flow/pkg/workflow/state"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -20,10 +20,9 @@ import (
 
 // Traverser ...
 type Traverser struct {
-	req   *request.Request
-	chain *Chain
+	grapher *graph.Grapher
 
-	reaper chain.JobReaper
+	reaper traverser.JobReaper
 
 	runJobChan  chan job.Job  // jobs to be run
 	doneJobChan chan job.Job  // jobs that are done
@@ -43,19 +42,8 @@ type Traverser struct {
 	sendTimeout time.Duration // Time to wait for a job to send on doneJobChan.
 }
 
-// TraverserConfig ...
-type TraverserConfig struct {
-	req   *request.Request
-	chain *Chain
-
-	logger *infra.Logger
-
-	stopTimeout time.Duration
-	sendTimeout time.Duration
-}
-
 // NewTraverser ...
-func NewTraverser(cfg TraverserConfig) *Traverser {
+func NewTraverser(grapher *graph.Grapher, logger *infra.Logger, stopTimeout, sendTimeout time.Duration) *Traverser {
 	// Channels used to communicate between traverser + reaper(s)
 	doneJobChan := make(chan job.Job)
 	runJobChan := make(chan job.Job)
@@ -65,8 +53,7 @@ func NewTraverser(cfg TraverserConfig) *Traverser {
 	runnerRepo := runner.NewRepo()
 
 	return &Traverser{
-		req:   cfg.req,
-		chain: cfg.chain,
+		grapher: grapher,
 
 		runnerRepo: runnerRepo,
 
@@ -77,11 +64,11 @@ func NewTraverser(cfg TraverserConfig) *Traverser {
 		stopChan:    make(chan struct{}),
 		pendingChan: make(chan struct{}),
 
-		logger: cfg.logger,
+		logger: logger,
 
 		stopMux:     &sync.RWMutex{},
-		stopTimeout: cfg.stopTimeout,
-		sendTimeout: cfg.sendTimeout,
+		stopTimeout: stopTimeout,
+		sendTimeout: sendTimeout,
 	}
 }
 
@@ -98,10 +85,10 @@ func (t *Traverser) Run(ctx context.Context) {
 	go t.runJobs(ctx)
 
 	// Enqueue all the first runnable jobs
-	for _, j := range t.chain.RunnableJobs() {
-		node := t.chain.Vertices[j.ID()]
+	for _, j := range t.grapher.Chain.RunnableJobs() {
+		node := t.grapher.Chain.Vertices[j.StepID()]
 		fields := []zapcore.Field{
-			zap.String("job_id", j.ID().String()),
+			zap.String("job_id", j.StepID().String()),
 			zap.String("job_name", node.Name),
 		}
 		logger.Info("initial job", fields...)
@@ -113,7 +100,7 @@ func (t *Traverser) Run(ctx context.Context) {
 	// calls t.reaper.Stop(), which is this reaper. The close(t.runJobChan)
 	// causes runJobs() (started above ^) to return.
 	runningReaperChan := make(chan struct{})
-	t.reaper = NewRunningChainReaper(t.chain, t.logger)
+	t.reaper = NewRunningChainReaper(t.grapher, t.logger, t.doneJobChan, t.runJobChan)
 	go func() {
 		defer close(runningReaperChan) // indicate reaper is done (see select below)
 		defer close(t.runJobChan)      // stop runJobs goroutine
@@ -204,7 +191,7 @@ func (t *Traverser) runJobs(ctx context.Context) {
 		select {
 		case <-t.stopChan:
 			fields := []zapcore.Field{
-				zap.String("job_id", j.ID().String()),
+				zap.String("job_id", j.StepID().String()),
 			}
 			logger.Info("not running job %s: traverser stopped", fields...)
 			continue
@@ -218,9 +205,9 @@ func (t *Traverser) runJobs(ctx context.Context) {
 		// the same loop "j" variable.
 		go func(j job.Job) {
 			fields := []zapcore.Field{
-				zap.String("job_id", j.ID().String()),
-				zap.String("sequence_id", t.chain.DAG.Vertices[j.ID()].SequenceID.String()),
-				zap.Int("sequence_try", int(t.chain.DAG.Vertices[j.ID()].SequenceRetry)),
+				zap.String("job_id", j.StepID().String()),
+				zap.String("sequence_id", t.grapher.DAG.Vertices[j.StepID()].SequenceID.String()),
+				zap.Int("sequence_try", int(t.grapher.DAG.Vertices[j.StepID()].SequenceRetry)),
 			}
 
 			// Always send the finished job to doneJobChan to be reaped. If the
@@ -237,33 +224,33 @@ func (t *Traverser) runJobs(ctx context.Context) {
 				// AFTER sending it to doneJobChan. This avoids a race condition
 				// when the stopped + suspended reapers check if the runnerRepo
 				// is empty.
-				t.runnerRepo.Remove(j.ID().String())
+				t.runnerRepo.Remove(j.StepID().String())
 			}()
 
 			// Increment sequence try count if this is sequence start job, which
 			// currently means sequenceId == job.Id.
-			if t.chain.IsSequenceStartJob(j.ID()) {
-				t.chain.IncrementSequenceTries(j.ID(), 1)
+			if t.grapher.Chain.IsSequenceStartJob(j.StepID()) {
+				t.grapher.Chain.IncrementSequenceTries(j.StepID(), 1)
 				tryFields := append([]zapcore.Field(nil), fields...)
-				tryFields = append(tryFields, zap.Uint("current", t.chain.SequenceTries(j.ID())))
+				tryFields = append(tryFields, zap.Uint("current", t.grapher.Chain.SequenceTries(j.StepID())))
 				logger.Info("sequence try", tryFields...)
 			}
 
-			totalTries := t.chain.JobTries(j.ID())
+			totalTries := t.grapher.Chain.JobTries(j.StepID())
 
-			node := t.chain.Vertices[j.ID()]
-			jobRunner := runner.NewRunner(j, t.req, totalTries, node.Name, node.Retry, node.RetryWait, t.logger)
+			node := t.grapher.Chain.Vertices[j.StepID()]
+			jobRunner := runner.NewRunner(j, t.grapher.Req, totalTries, node.Name, node.Retry, node.RetryWait, t.logger)
 
 			// Add the runner to the repo. Runners in the repo are used
 			// by the Stop methods on the traverser.
 			// Then decrement pending to signal to stopRunningJobs that
 			// there's one less goroutine it needs to wait for.
-			t.runnerRepo.Set(j.ID().String(), jobRunner)
+			t.runnerRepo.Set(j.StepID().String(), jobRunner)
 			atomic.AddInt64(&t.pending, -1)
 
 			// Run the job. This is a blocking operation that could take a long time.
 			logger.Info("running job", fields...)
-			t.chain.SetJobState(j.ID(), state.StateRunning)
+			t.grapher.Chain.SetJobState(j.StepID(), state.StateRunning)
 			ret := jobRunner.Run(ctx)
 			runFields := append([]zapcore.Field(nil), fields...)
 			runFields = append(runFields, zap.String("state", state.StateText[ret.AtomReturn.State]))
@@ -271,7 +258,7 @@ func (t *Traverser) runJobs(ctx context.Context) {
 
 			// We don't pass the Chain to the job runner, so it can't call this
 			// itself. Instead, it returns how many tries it did, and we set it.
-			t.chain.IncrementJobTries(j.ID(), ret.Tries)
+			t.grapher.Chain.IncrementJobTries(j.StepID(), ret.Tries)
 
 			// Set job final state because this job is about to be reaped on
 			// the doneJobChan, sent in this goroutine's defer func at top ^.

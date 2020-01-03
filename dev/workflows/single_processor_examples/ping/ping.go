@@ -1,14 +1,15 @@
 package ping
 
 import (
+	"context"
+	"time"
+
 	"github.com/faceair/jio"
 	"github.com/longsolong/flow/dev/steps/examples"
 	"github.com/longsolong/flow/pkg/orchestration/job"
 	"github.com/longsolong/flow/pkg/orchestration/request"
-	"github.com/longsolong/flow/pkg/orchestration/single_processor/chain"
 	"github.com/longsolong/flow/pkg/orchestration/single_processor/graph"
 	"github.com/longsolong/flow/pkg/workflow/dag"
-	"time"
 )
 
 const (
@@ -18,7 +19,46 @@ const (
 	VERSION = 1
 )
 
-func buildRequest(rawRequestData []byte) (*request.Request, error) {
+type plotter struct {
+	graph.Plotter
+}
+
+func (p *plotter) Begin(ctx context.Context, req *request.Request) error {
+	// node
+	step1 := examples.NewPing("", "")
+	if err := step1.Create(ctx, req); err != nil {
+		return err
+	}
+	err := p.DAG.AddNode(dag.NewNode(step1, "ping host", 3, time.Duration(10)*time.Millisecond))
+	if err != nil {
+		return err
+	}
+
+	// job
+	p.Chain.AddJob(job.NewJob(step1))
+
+	return nil
+}
+
+func (p *plotter) Grow(ctx context.Context) {
+	p.Plotter.Close()
+}
+
+// NewGrapher ...
+func NewGrapher(ctx context.Context, rawRequestData []byte) (*graph.Grapher, error) {
+	req, err := newRequest(ctx, rawRequestData)
+	if err != nil {
+		return nil, err
+	}
+	p, err := newPlotter(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	g := graph.NewGrapher(req, p.DAG, p.Chain, p)
+	return g, nil
+}
+
+func newRequest(ctx context.Context, rawRequestData []byte) (*request.Request, error) {
 	schema := jio.Object().Keys(jio.K{
 		"requestArgs": jio.Object().Keys(jio.K{
 			"hostname": jio.String().Required(),
@@ -35,41 +75,20 @@ func buildRequest(rawRequestData []byte) (*request.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	req := request.NewRequest()
+	req := request.NewRequestWithContext(ctx)
 	req.RequestArgs = requestArgs["requestArgs"].(map[string]interface{})
 	for _, v := range requestArgs["requestTags"].([]interface{}) {
 		v := v.(map[string]interface{})
-		for kk, vv := range v {
-			vv := vv.(string)
-			req.RequestTags = append(req.RequestTags, request.Tag{Name: kk, Value: vv})
-		}
+		req.RequestTags = append(req.RequestTags, request.Tag{Name: v["name"].(string), Value: v["value"].(string)})
 	}
 	return req, nil
 }
 
-type plotter struct {}
-
-func (p *plotter) Begin(name string, version int, req *request.Request) (*dag.DAG, *chain.Chain, error) {
-	d := dag.NewDAG(name, version)
-	step1 := dag.NewNode(examples.NewPing("", ""), "ping host", 3, time.Duration(10)*time.Millisecond)
-	err := d.AddNode(step1)
-	if err != nil {
-		return nil, nil, err
+// newPlotter ...
+func newPlotter(ctx context.Context, req *request.Request) (*plotter, error) {
+	p := &plotter{Plotter: graph.NewPlotter(NAME, VERSION)}
+	if err := p.Begin(ctx, req); err != nil {
+		return nil, err
 	}
-	c := chain.NewChain(d)
-	c.AddJob(job.NewJob(step1.Datum))
-	return d, c, err
-}
-
-func (p *plotter) Grow(*dag.DAG, *chain.Chain, *request.Request) error {
-	return nil
-}
-
-// NewGrapher ...
-func NewGrapher(rawRequestData []byte) (*graph.Grapher, error) {
-	return graph.NewGrapher(
-		NAME, VERSION,
-		rawRequestData,
-		buildRequest,
-		new(plotter))
+	return p, nil
 }

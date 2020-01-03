@@ -16,10 +16,8 @@ func TestNewJobChain(t *testing.T) {
 	d := dag.NewDAG("test noop chain", 1)
 
 	chain := NewChain(d)
-	noop1 := dag.NewNode(
-		builtin.NewNoop(atom.ID{ID: "1"}), "noop1", 0, time.Duration(0))
-	noop2 := dag.NewNode(
-		builtin.NewNoop(atom.ID{ID: "2"}), "noop2", 0, time.Duration(0))
+	noop1 := dag.NewNode(builtin.NewNoop("1", ""), "noop1", 0, time.Duration(0))
+	noop2 := dag.NewNode(builtin.NewNoop("2", ""), "noop2", 0, time.Duration(0))
 
 	err := chain.AddNode(noop1)
 	assert.Nil(t, err)
@@ -34,14 +32,14 @@ func TestNewJobChain(t *testing.T) {
 	assert.Equal(t, workflow.ErrAlreadyRegisteredUpstream, err)
 
 	upstreams := noop1.Prev
-	assert.Equal(t, map[atom.ID]*dag.Node{}, upstreams)
+	assert.Equal(t, map[atom.AtomID]*dag.Node{}, upstreams)
 
-	_, ok := noop1.Next[noop2.Datum.ID()]
+	_, ok := noop1.Next[noop2.Datum.StepID()]
 	assert.True(t, ok)
 
-	_, ok = noop2.Prev[noop1.Datum.ID()]
+	_, ok = noop2.Prev[noop1.Datum.StepID()]
 	assert.True(t, ok)
 
 	downstreams := noop2.Next
-	assert.Equal(t, map[atom.ID]*dag.Node{}, downstreams)
+	assert.Equal(t, map[atom.AtomID]*dag.Node{}, downstreams)
 }

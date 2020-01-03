@@ -12,6 +12,7 @@ import (
 	"github.com/longsolong/flow/pkg/workflow/state"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -74,7 +75,7 @@ func NewRunner(realJob job.Job, req *request.Request, totalTries uint, name stri
 func (r *runner) Run(ctx context.Context) Return {
 	fields := []zapcore.Field{
 		zap.String("request_id", r.req.RequestUUID.String()),
-		zap.String("job_id", r.realJob.ID().String()),
+		zap.String("job_id", r.realJob.StepID().String()),
 	}
 	logger := r.logger.Log
 
@@ -108,11 +109,13 @@ TRY_LOOP:
 			zap.Duration("runtime", runtime),
 			zap.String("state", state.StateText[jobRet.State]),
 			zap.Int64("exit", jobRet.Exit),
-			zap.String("err", jobRet.Error.Error()),
-			zap.String("run_err", runErr.Error()),
+			zap.NamedError("err", jobRet.Error),
+			zap.NamedError("run_err", runErr),
 		}...)
-
 		logger.Info("job return", runFields...)
+
+		// Set final job state to this job state
+		finalAtomReturn.State = jobRet.State
 
 		// Break try loop on success or stop
 		if jobRet.State == state.StateSuccess || jobRet.State == state.StateStopped {
@@ -176,6 +179,7 @@ func (r *runner) runJob(ctx context.Context) (startedAt, finishedAt int64, ret a
 			}
 			// The returned error will be used in the job log entry.
 			err = fmt.Errorf("panic from job.Run: %s", panicErr)
+			debug.PrintStack()
 		}
 	}()
 
@@ -192,7 +196,7 @@ func (r *runner) runJob(ctx context.Context) (startedAt, finishedAt int64, ret a
 func (r *runner) Stop(ctx context.Context) error {
 	fields := []zapcore.Field{
 		zap.String("request_id", r.req.RequestUUID.String()),
-		zap.String("job_id", r.realJob.ID().String()),
+		zap.String("job_id", r.realJob.StepID().String()),
 	}
 	logger := r.logger.Log
 

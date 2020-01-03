@@ -15,11 +15,9 @@ type EchoCommand struct {
 // NewEchoCommand ...
 func NewEchoCommand(id, expansionDigest string) *EchoCommand {
 	echo := &EchoCommand{}
-	echo.SetID(atom.ID{
-		ID:              id,
-		ExpansionDigest: expansionDigest,
-		Type:            atom.GenRunnableType(echo, "builtin"),
-	})
+	echo.ID = id
+	echo.ExpansionDigest = expansionDigest
+	echo.Type = atom.GenAtomType(echo)
 	return echo
 }
 

@@ -1,12 +1,13 @@
 package ping
 
 import (
+	"context"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestCreatePingNewGrapher(t *testing.T) {
-	_, err := NewGrapher([]byte(`{
+	_, err := NewGrapher(context.Background(), []byte(`{
 		"primaryRequestArgs": {
 			"name": "ping",
 			"version": 1

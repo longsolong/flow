@@ -1,11 +1,12 @@
 // Copyright 2017-2019, Square, Inc.
 
-package chain
+package traverser
 
 import (
 	"context"
 	"github.com/longsolong/flow/pkg/infra"
 	"github.com/longsolong/flow/pkg/orchestration/job"
+	"github.com/longsolong/flow/pkg/orchestration/single_processor/graph"
 	"github.com/longsolong/flow/pkg/workflow/atom"
 	"github.com/longsolong/flow/pkg/workflow/state"
 	"go.uber.org/zap"
@@ -14,8 +15,9 @@ import (
 )
 
 type reaper struct {
-	chain  *Chain
-	logger *infra.Logger
+	grapher *graph.Grapher
+
+	logger   *infra.Logger
 
 	stopMux  *sync.Mutex
 	stopped  bool
@@ -32,19 +34,19 @@ type RunningChainReaper struct {
 }
 
 // NewRunningChainReaper ...
-func NewRunningChainReaper(c *Chain, logger *infra.Logger) *RunningChainReaper {
+func NewRunningChainReaper(grapher *graph.Grapher, logger *infra.Logger, doneJobChan, runJobChan chan job.Job) *RunningChainReaper {
 	return &RunningChainReaper{
 		reaper: reaper{
-			chain:  c,
-			logger: logger,
+			grapher: grapher,
+			logger:   logger,
 
 			stopMux:  &sync.Mutex{},
 			stopChan: make(chan struct{}),
 
 			doneChan:    make(chan struct{}),
-			doneJobChan: make(chan job.Job),
+			doneJobChan: doneJobChan,
 		},
-		runJobChan: make(chan job.Job),
+		runJobChan: runJobChan,
 	}
 }
 
@@ -56,7 +58,7 @@ func (r *RunningChainReaper) Run(ctx context.Context) {
 	defer close(r.doneChan)
 
 	// If the chain is already done, skip straight to finalizing.
-	done, complete := r.chain.IsDoneRunning()
+	done, complete := r.grapher.Chain.IsDoneRunning()
 	if done {
 		r.Finalize(complete)
 		return
@@ -67,9 +69,13 @@ REAPER:
 		select {
 		case j := <-r.doneJobChan:
 			r.Reap(&j)
-			done, complete = r.chain.IsDoneRunning()
+			done, complete = r.grapher.Chain.IsDoneRunning()
 			if done {
-				break REAPER
+				select {
+				case <-r.grapher.GraphPlotter.Done():
+					break REAPER
+				default:
+				}
 			}
 		case <-r.stopChan:
 			// Don't Finalize the chain when stopping
@@ -103,21 +109,26 @@ func (r *RunningChainReaper) Stop(ctx context.Context) {
 // If job completed: prepared subsequent jobs and enqueue if runnable.
 func (r *RunningChainReaper) Reap(job *job.Job) {
 	fields := []zapcore.Field{
-		zap.String("job_id", job.ID().String()),
-		zap.String("sequence_id", r.chain.DAG.Vertices[job.ID()].SequenceID.String()),
-		zap.Int("sequence_try", int(r.chain.DAG.Vertices[job.ID()].SequenceRetry)),
+		zap.String("job_id", job.StepID().String()),
 	}
+	sequenceFields := append([]zapcore.Field(nil), fields...)
+	sequenceFields = append(sequenceFields, []zapcore.Field{
+		zap.String("sequence_id", r.grapher.Chain.DAG.Vertices[job.StepID()].SequenceID.String()),
+		zap.Int("sequence_try", int(r.grapher.Chain.DAG.Vertices[job.StepID()].SequenceRetry)),
+	}...)
+
 	logger := r.logger.Log
+	logger.Info("got job", sequenceFields...)
 
 	// Set the final state of the job in the chain.
-	r.chain.SetJobState(job.ID(), job.State)
+	r.grapher.Chain.SetJobState(job.StepID(), job.State)
 
 	if _, ok := state.JobCompleteState[job.State]; ok {
-		for _, nextJob := range r.chain.NextJobs(job.ID()) {
+		for _, nextJob := range r.grapher.Chain.NextJobs(job.StepID()) {
 			nextFields := append([]zapcore.Field(nil), fields...)
-			nextFields = append(nextFields, zap.String("next_job_id", nextJob.ID().String()))
+			nextFields = append(nextFields, zap.String("next_job_id", nextJob.StepID().String()))
 
-			if !r.chain.IsRunnable(nextJob.ID()) {
+			if !r.grapher.Chain.IsRunnable(nextJob.StepID()) {
 				logger.Info("next job not runnable", nextFields...)
 				continue
 			}
@@ -127,7 +138,7 @@ func (r *RunningChainReaper) Reap(job *job.Job) {
 	} else {
 		// Job was NOT successful. The job.Runner already did job retries.
 		// Retry sequence if possible.
-		if !r.chain.CanRetrySequence(job.ID()) {
+		if !r.grapher.Chain.CanRetrySequence(job.StepID()) {
 			logger.Warn("job failed, no sequence tries left", fields...)
 			return
 		}
@@ -142,14 +153,14 @@ func (r *RunningChainReaper) Finalize(complete bool) {
 }
 
 // prepareSequenceRetry prepares a sequence to retry. The caller should check
-// r.chain.CanRetrySequence first; this func does not check the seq retry limit
+// r.grapher.Chain.CanRetrySequence first; this func does not check the seq retry limit
 // or increment seq try count (that's done in traverser.runJobs when the seq
 // start job runs).
 func (r *reaper) prepareSequenceRetry(failedJob *job.Job) *job.Job {
-	sequenceStartJob := r.chain.SequenceStartJob(failedJob.ID())
+	sequenceStartJob := r.grapher.Chain.SequenceStartJob(failedJob.StepID())
 
 	fields := []zapcore.Field{
-		zap.String("sequence_id", sequenceStartJob.ID().String()),
+		zap.String("sequence_id", sequenceStartJob.StepID().String()),
 	}
 	logger := r.logger.Log
 
@@ -164,7 +175,7 @@ func (r *reaper) prepareSequenceRetry(failedJob *job.Job) *job.Job {
 
 	haveFailedJob := false
 	for _, j := range sequenceJobsToRetry {
-		if j.ID() == failedJob.ID() {
+		if j.StepID() == failedJob.StepID() {
 			haveFailedJob = true
 			break
 		}
@@ -176,7 +187,7 @@ func (r *reaper) prepareSequenceRetry(failedJob *job.Job) *job.Job {
 	// Roll back completed sequence jobs
 	for _, j := range sequenceJobsToRetry {
 		// Roll back job state to pending so it's runnable again
-		r.chain.SetJobState(j.ID(), state.StateUpForRetry)
+		r.grapher.Chain.SetJobState(j.StepID(), state.StateUpForRetry)
 	}
 
 	// Running reaper will re-enqueue/re-run seq from this seq start job.
@@ -188,14 +199,14 @@ func (r *reaper) prepareSequenceRetry(failedJob *job.Job) *job.Job {
 // completed. You can read how BFS works here:
 // https://en.wikipedia.org/wiki/Breadth-first_search.
 func (r *reaper) sequenceJobsCompleted(sequenceStartJob *job.Job) []*job.Job {
-	toVisit := map[atom.ID]*job.Job{} // job id -> job to visit
-	visited := map[atom.ID]*job.Job{} // job id -> job visited
+	toVisit := map[atom.AtomID]*job.Job{} // job id -> job to visit
+	visited := map[atom.AtomID]*job.Job{} // job id -> job visited
 
 	// Process sequenceStartJob
-	for _, pJob := range r.chain.NextJobs(sequenceStartJob.ID()) {
-		toVisit[pJob.ID()] = pJob
+	for _, pJob := range r.grapher.Chain.NextJobs(sequenceStartJob.StepID()) {
+		toVisit[pJob.StepID()] = pJob
 	}
-	visited[sequenceStartJob.ID()] = sequenceStartJob
+	visited[sequenceStartJob.StepID()] = sequenceStartJob
 
 PROCESS_TO_VISIT_LIST:
 	for len(toVisit) > 0 {
@@ -204,7 +215,7 @@ PROCESS_TO_VISIT_LIST:
 		for currentJobID, currentJob := range toVisit {
 
 		PROCESS_NEXT_JOBS:
-			for _, nextJob := range r.chain.NextJobs(currentJobID) {
+			for _, nextJob := range r.grapher.Chain.NextJobs(currentJobID) {
 				// Don't add failed or unknown jobs to toVisit list
 				// For example, if job C of A -> B -> C -> D fails, then do not add C
 				// or D to toVisit list. Because we have single sequence retries,
@@ -216,8 +227,8 @@ PROCESS_TO_VISIT_LIST:
 
 				// Make sure we don't visit a job multiple times. We can see a job
 				// multiple times if it is a "fan in" node.
-				if _, seen := visited[nextJob.ID()]; !seen {
-					toVisit[nextJob.ID()] = nextJob
+				if _, seen := visited[nextJob.StepID()]; !seen {
+					toVisit[nextJob.StepID()] = nextJob
 				}
 			}
 

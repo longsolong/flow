@@ -6,15 +6,9 @@ import (
 
 // Step ...
 type Step struct {
-	id atom.ID
+	atom.AtomID
 }
 
-// ID ...
-func(s *Step) ID() atom.ID {
-	return s.id
-}
-
-// SetID ...
-func(s *Step) SetID(id atom.ID) {
-	s.id = id
+func (s *Step) StepID() atom.AtomID {
+	return s.AtomID
 }

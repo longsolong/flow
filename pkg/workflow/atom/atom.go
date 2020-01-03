@@ -9,17 +9,17 @@ import (
 // Atom ...
 type Atom interface {
 	Create(ctx context.Context, req *request.Request) error
-	ID() ID
+	StepID() AtomID
 }
 
-// ID ...
-type ID struct {
+// AtomID ...
+type AtomID struct {
 	Type            string
 	ID              string
 	ExpansionDigest string
 }
 
 
-func (id ID) String() string {
-	return fmt.Sprintf("Type: %s ID: %s ExpansionDigest: %s", id.Type, id.ID, id.ExpansionDigest)
+func (id AtomID) String() string {
+	return fmt.Sprintf("AtomID: %s.%s.%s", id.Type, id.ID, id.ExpansionDigest)
 }

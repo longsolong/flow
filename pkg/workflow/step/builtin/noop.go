@@ -14,10 +14,11 @@ type Noop struct {
 }
 
 // NewNoop ...
-func NewNoop(id atom.ID) *Noop {
+func NewNoop(id, expansionDigest string) *Noop {
 	n := &Noop{}
-	id.Type = atom.GenRunnableType(n, "builtin")
-	n.SetID(id)
+	n.ID = id
+	n.ExpansionDigest = expansionDigest
+	n.Type = atom.GenAtomType(n)
 	return n
 }
 
