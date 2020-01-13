@@ -1,9 +1,10 @@
 package command
 
 import (
+	"context"
 	"os/exec"
 
-	"github.com/longsolong/flow/pkg/workflow"
+	"github.com/longsolong/flow/pkg/workflow/atom"
 	"github.com/longsolong/flow/pkg/workflow/state"
 	"github.com/longsolong/flow/pkg/workflow/step"
 )
@@ -16,10 +17,10 @@ type ShellCommand struct {
 }
 
 // Run a shell
-func (s *ShellCommand) Run(ctx workflow.Context) (workflow.Return, error) {
+func (s *ShellCommand) Run(ctx context.Context) (atom.Return, error) {
 	// Run the cmd and wait for it to return
 	err := s.Cmd.Run()
-	ret := workflow.Return{
+	ret := atom.Return{
 		Error: err,
 	}
 	if err != nil {
@@ -33,6 +34,6 @@ func (s *ShellCommand) Run(ctx workflow.Context) (workflow.Return, error) {
 }
 
 // Stop run
-func (s *ShellCommand) Stop(ctx workflow.Context) error {
+func (s *ShellCommand) Stop(ctx context.Context) error {
 	return nil
 }

@@ -2,52 +2,95 @@ package dag
 
 import (
 	"github.com/longsolong/flow/pkg/workflow"
-	"github.com/longsolong/flow/pkg/workflow/step"
+	"github.com/longsolong/flow/pkg/workflow/atom"
+	"sync"
+	"time"
 )
 
 // DAG represents a directed acyclic graph.
 type DAG struct {
-	Steps           map[step.ID]step.Atom
-	UpstreamStepIDs map[step.ID]map[step.ID]bool
+	Name    string // Name of the Graph
+	Version int    // Version of the Graph
+
+	Vertices    map[atom.AtomID]*Node // All vertices in the graph (node id -> node)
+	VerticesMux *sync.RWMutex         // for access to vertices maps
+}
+
+// Node represents a single vertex within a Graph.
+// Each node consists of a Payload (i.e. the data that the
+// user cares about), a list of next and prev Nodes, and other
+// information about the node such as the number of times it
+// should be retried on error. Next defines all the out edges
+// from Node, and Prev defines all the in edges to Node.
+type Node struct {
+	Datum   atom.Atom             // Data stored at this Node
+	Next    map[atom.AtomID]*Node // out edges ( node id -> Node )
+	Prev    map[atom.AtomID]*Node // in edges ( node id -> Node )
+	EdgeMux *sync.RWMutex         // for access to vertices maps
+
+	Name          string        // the name of the node
+	Retry         uint          // the number of times to retry a node
+	RetryWait     time.Duration // the time, in seconds, to sleep between retries
+	SequenceID    atom.AtomID   // AtomID for first node in sequence
+	SequenceRetry uint          // Number of times to retry a sequence. Only set for first node in sequence.
 }
 
 // NewDAG ...
-func NewDAG() *DAG {
+func NewDAG(name string, version int) *DAG {
 	return &DAG{
-		Steps:           make(map[step.ID]step.Atom),
-		UpstreamStepIDs: make(map[step.ID]map[step.ID]bool),
+		Name:        name,
+		Version:     version,
+		Vertices:    make(map[atom.AtomID]*Node),
+		VerticesMux: &sync.RWMutex{},
 	}
 }
 
-// AddStep ...
-func (g *DAG) AddStep(stepID step.ID, atom step.Atom) error {
-	if _, ok := g.Steps[stepID]; ok {
-		return workflow.ErrAlreadyRegisteredStep
+// NewNode ...
+func NewNode(a atom.Atom, name string, retry uint, retryWait time.Duration) *Node {
+	return &Node{
+		Datum:   a,
+		Next:    make(map[atom.AtomID]*Node),
+		Prev:    make(map[atom.AtomID]*Node),
+		EdgeMux: &sync.RWMutex{},
+
+		Name:      name,
+		Retry:     retry,
+		RetryWait: retryWait,
 	}
-	g.Steps[stepID] = atom
+}
+
+// AddNode ...
+func (g *DAG) AddNode(node *Node) error {
+	g.VerticesMux.Lock()
+	defer g.VerticesMux.Unlock()
+	if _, ok := g.Vertices[node.Datum.StepID()]; ok {
+		return workflow.ErrAlreadyRegisteredNode
+	}
+	g.Vertices[node.Datum.StepID()] = node
 	return nil
+}
+
+// GetNode ...
+func (g *DAG) GetNode(atomID atom.AtomID) (*Node, error) {
+	g.VerticesMux.RLock()
+	defer g.VerticesMux.RUnlock()
+	if node, ok := g.Vertices[atomID]; ok {
+		return node, nil
+	}
+	return nil, workflow.ErrNotRegisteredNode
 }
 
 // SetUpstream ...
-func (g *DAG) SetUpstream(currentStepID, upstreamStepID step.ID) error {
-	upstreams, ok := g.UpstreamStepIDs[currentStepID]
-	if ok {
-		if _, ok2 := upstreams[upstreamStepID]; ok2 {
-			return workflow.ErrAlreadyRegisteredUpstream
-		}
-	} else {
-		g.UpstreamStepIDs[currentStepID] = make(map[step.ID]bool)
+func (n *Node) SetUpstream(upstream *Node) error {
+	n.EdgeMux.Lock()
+	defer n.EdgeMux.Unlock()
+	if _, ok := n.Prev[upstream.Datum.StepID()]; ok {
+		return workflow.ErrAlreadyRegisteredUpstream
 	}
-	g.UpstreamStepIDs[currentStepID][upstreamStepID] = true
+	if _, ok := upstream.Next[n.Datum.StepID()]; ok {
+		return workflow.ErrAlreadyRegisteredDownstream
+	}
+	n.Prev[upstream.Datum.StepID()] = upstream
+	upstream.Next[n.Datum.StepID()] = n
 	return nil
-}
-
-// Upstreams ...
-func (g *DAG) Upstreams(stepID step.ID) (upstreams []step.Atom) {
-	if upstreamStepIDs, ok := g.UpstreamStepIDs[stepID]; ok {
-		for stepID := range upstreamStepIDs {
-			upstreams = append(upstreams, g.Steps[stepID])
-		}
-	}
-	return
 }

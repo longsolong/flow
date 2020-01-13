@@ -1,25 +1,14 @@
 package step
 
 import (
-	"github.com/longsolong/flow/pkg/workflow"
+	"github.com/longsolong/flow/pkg/workflow/atom"
 )
-
-// Atom ...
-type Atom interface {
-	Create(ctx workflow.Context) error
-}
-
-// ID ...
-type ID struct {
-	Type            string
-	Name            string
-	ID              string
-	ExpansionDigest string
-}
 
 // Step ...
 type Step struct {
-	ID         ID
-	SequenceID *ID
-	Atom
+	atom.AtomID
+}
+
+func (s *Step) StepID() atom.AtomID {
+	return s.AtomID
 }

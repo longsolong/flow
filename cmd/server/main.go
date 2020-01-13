@@ -34,10 +34,11 @@ func run() error {
 	// setup routes
 	restHandler := rest.CreateHandler(logger)
 	restHandler.NewHealthCheckHandler()
+	restHandler.NewFlowHandler(logger)
 
 	// listen and serve
 	// webServer := server.CreateServer(restHandler.GetRouter(), ":"+os.Getenv("HTTP_PORT"))
-	webServer := infra.CreateServer(restHandler.GetRouter(), ":3000")
+	srv := infra.CreateServer(restHandler.GetRouter(), ":3000")
 	log.Println("starting server...")
-	return webServer.ListenAndServe()
+	return srv.ListenAndServe()
 }
