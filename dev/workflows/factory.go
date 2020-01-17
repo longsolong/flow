@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/longsolong/flow/dev/workflows/single_processor_examples/ping"
+	"github.com/longsolong/flow/pkg/engine/single_processor/traverser"
 	"github.com/longsolong/flow/pkg/infra"
 	"github.com/longsolong/flow/pkg/orchestration/single_processor/graph"
-	"github.com/longsolong/flow/pkg/orchestration/single_processor/traverser"
 )
 
 // SingleProcessorFactory ...
