@@ -50,7 +50,7 @@ func (c *Chain) SetJobState(atomID atom.AtomID, state state.State) {
 func (c *Chain) AddJob(j *job.Job) {
 	c.jobsMux.Lock()
 	defer c.jobsMux.Unlock()
-	c.jobs[j.StepID()] = j
+	c.jobs[j.AtomID()] = j
 }
 
 // NextJobs finds all of the jobs adjacent to the given job.
@@ -115,7 +115,7 @@ func (c *Chain) IsDoneRunning() (done bool, complete bool) {
 			continue
 		}
 		if j.State == state.StateUnknown {
-			if c.isRunnable(j.StepID()) {
+			if c.isRunnable(j.AtomID()) {
 				return false, false
 			}
 		} else if _, ok := state.JobUndoneState[j.State]; ok {
@@ -172,7 +172,7 @@ func (c *Chain) CanRetrySequence(jobID atom.AtomID) bool {
 	sequenceStartJob := c.SequenceStartJob(jobID)
 	c.triesMux.RLock()
 	defer c.triesMux.RUnlock()
-	return c.sequenceTries[sequenceStartJob.StepID()] <= c.DAG.Vertices[sequenceStartJob.StepID()].SequenceRetry
+	return c.sequenceTries[sequenceStartJob.AtomID()] <= c.DAG.Vertices[sequenceStartJob.AtomID()].SequenceRetry
 }
 
 // IncrementJobTries ...

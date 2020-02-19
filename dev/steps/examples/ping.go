@@ -7,6 +7,7 @@ import (
 	"github.com/longsolong/flow/pkg/orchestration/request"
 	"github.com/longsolong/flow/pkg/workflow/atom"
 	flowcontext "github.com/longsolong/flow/pkg/workflow/context"
+	"reflect"
 	"time"
 
 	"github.com/longsolong/flow/pkg/workflow/step"
@@ -24,7 +25,6 @@ func NewPing(id, expansionDigest string) *Ping {
 	p := &Ping{}
 	p.ID = id
 	p.ExpansionDigest = expansionDigest
-	p.Type = atom.GenAtomType(p)
 	return p
 }
 
@@ -69,4 +69,19 @@ func (p *Ping) Run(ctx context.Context) (atom.Return, error) {
 func (p *Ping) Stop(ctx context.Context) error {
 	p.pinger.Stop()
 	return nil
+}
+
+// GenAtomType ...
+func (p *Ping) GenAtomType() string {
+	e := reflect.TypeOf(p).Elem()
+	return e.String()
+}
+
+// Stop run
+func (p *Ping) AtomID() atom.AtomID {
+	return atom.AtomID{
+		Type: p.GenAtomType(),
+		ID: p.ID,
+		ExpansionDigest: p.ExpansionDigest,
+	}
 }

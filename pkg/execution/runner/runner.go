@@ -75,7 +75,7 @@ func NewRunner(realJob job.Job, req *request.Request, totalTries uint, name stri
 func (r *runner) Run(ctx context.Context) Return {
 	fields := []zapcore.Field{
 		zap.String("request_id", r.req.RequestUUID.String()),
-		zap.String("job_id", r.realJob.StepID().String()),
+		zap.String("job_id", r.realJob.AtomID().String()),
 	}
 	logger := r.logger.Log
 
@@ -196,7 +196,7 @@ func (r *runner) runJob(ctx context.Context) (startedAt, finishedAt int64, ret a
 func (r *runner) Stop(ctx context.Context) error {
 	fields := []zapcore.Field{
 		zap.String("request_id", r.req.RequestUUID.String()),
-		zap.String("job_id", r.realJob.StepID().String()),
+		zap.String("job_id", r.realJob.AtomID().String()),
 	}
 	logger := r.logger.Log
 

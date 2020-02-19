@@ -29,10 +29,10 @@ func TestNewDAG(t *testing.T) {
 	upstreams := noop1.Prev
 	assert.Equal(t, map[atom.AtomID]*Node{}, upstreams)
 
-	_, ok := noop1.Next[noop2.Datum.StepID()]
+	_, ok := noop1.Next[noop2.Datum.AtomID()]
 	assert.True(t, ok)
 
-	_, ok = noop2.Prev[noop1.Datum.StepID()]
+	_, ok = noop2.Prev[noop1.Datum.AtomID()]
 	assert.True(t, ok)
 
 	downstreams := noop2.Next

@@ -9,7 +9,7 @@ import (
 // Atom ...
 type Atom interface {
 	Create(ctx context.Context, req *request.Request) error
-	StepID() AtomID
+	AtomID() AtomID
 }
 
 // AtomID ...
