@@ -63,10 +63,10 @@ func NewNode(a atom.Atom, name string, retry uint, retryWait time.Duration) *Nod
 func (g *DAG) AddNode(node *Node) error {
 	g.VerticesMux.Lock()
 	defer g.VerticesMux.Unlock()
-	if _, ok := g.Vertices[node.Datum.StepID()]; ok {
+	if _, ok := g.Vertices[node.Datum.AtomID()]; ok {
 		return workflow.ErrAlreadyRegisteredNode
 	}
-	g.Vertices[node.Datum.StepID()] = node
+	g.Vertices[node.Datum.AtomID()] = node
 	return nil
 }
 
@@ -84,13 +84,13 @@ func (g *DAG) GetNode(atomID atom.AtomID) (*Node, error) {
 func (n *Node) SetUpstream(upstream *Node) error {
 	n.EdgeMux.Lock()
 	defer n.EdgeMux.Unlock()
-	if _, ok := n.Prev[upstream.Datum.StepID()]; ok {
+	if _, ok := n.Prev[upstream.Datum.AtomID()]; ok {
 		return workflow.ErrAlreadyRegisteredUpstream
 	}
-	if _, ok := upstream.Next[n.Datum.StepID()]; ok {
+	if _, ok := upstream.Next[n.Datum.AtomID()]; ok {
 		return workflow.ErrAlreadyRegisteredDownstream
 	}
-	n.Prev[upstream.Datum.StepID()] = upstream
-	upstream.Next[n.Datum.StepID()] = n
+	n.Prev[upstream.Datum.AtomID()] = upstream
+	upstream.Next[n.Datum.AtomID()] = n
 	return nil
 }

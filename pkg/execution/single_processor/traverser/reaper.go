@@ -109,26 +109,26 @@ func (r *RunningChainReaper) Stop(ctx context.Context) {
 // If job completed: prepared subsequent jobs and enqueue if runnable.
 func (r *RunningChainReaper) Reap(job *job.Job) {
 	fields := []zapcore.Field{
-		zap.String("job_id", job.StepID().String()),
+		zap.String("job_id", job.AtomID().String()),
 	}
 	sequenceFields := append([]zapcore.Field(nil), fields...)
 	sequenceFields = append(sequenceFields, []zapcore.Field{
-		zap.String("sequence_id", r.grapher.Chain.DAG.Vertices[job.StepID()].SequenceID.String()),
-		zap.Int("sequence_try", int(r.grapher.Chain.DAG.Vertices[job.StepID()].SequenceRetry)),
+		zap.String("sequence_id", r.grapher.Chain.DAG.Vertices[job.AtomID()].SequenceID.String()),
+		zap.Int("sequence_try", int(r.grapher.Chain.DAG.Vertices[job.AtomID()].SequenceRetry)),
 	}...)
 
 	logger := r.logger.Log
 	logger.Info("got job", sequenceFields...)
 
 	// Set the final state of the job in the chain.
-	r.grapher.Chain.SetJobState(job.StepID(), job.State)
+	r.grapher.Chain.SetJobState(job.AtomID(), job.State)
 
 	if _, ok := state.JobCompleteState[job.State]; ok {
-		for _, nextJob := range r.grapher.Chain.NextJobs(job.StepID()) {
+		for _, nextJob := range r.grapher.Chain.NextJobs(job.AtomID()) {
 			nextFields := append([]zapcore.Field(nil), fields...)
-			nextFields = append(nextFields, zap.String("next_job_id", nextJob.StepID().String()))
+			nextFields = append(nextFields, zap.String("next_job_id", nextJob.AtomID().String()))
 
-			if !r.grapher.Chain.IsRunnable(nextJob.StepID()) {
+			if !r.grapher.Chain.IsRunnable(nextJob.AtomID()) {
 				logger.Info("next job not runnable", nextFields...)
 				continue
 			}
@@ -138,7 +138,7 @@ func (r *RunningChainReaper) Reap(job *job.Job) {
 	} else {
 		// Job was NOT successful. The job.Runner already did job retries.
 		// Retry sequence if possible.
-		if !r.grapher.Chain.CanRetrySequence(job.StepID()) {
+		if !r.grapher.Chain.CanRetrySequence(job.AtomID()) {
 			logger.Warn("job failed, no sequence tries left", fields...)
 			return
 		}
@@ -157,10 +157,10 @@ func (r *RunningChainReaper) Finalize(complete bool) {
 // or increment seq try count (that's done in traverser.runJobs when the seq
 // start job runs).
 func (r *reaper) prepareSequenceRetry(failedJob *job.Job) *job.Job {
-	sequenceStartJob := r.grapher.Chain.SequenceStartJob(failedJob.StepID())
+	sequenceStartJob := r.grapher.Chain.SequenceStartJob(failedJob.AtomID())
 
 	fields := []zapcore.Field{
-		zap.String("sequence_id", sequenceStartJob.StepID().String()),
+		zap.String("sequence_id", sequenceStartJob.AtomID().String()),
 	}
 	logger := r.logger.Log
 
@@ -175,7 +175,7 @@ func (r *reaper) prepareSequenceRetry(failedJob *job.Job) *job.Job {
 
 	haveFailedJob := false
 	for _, j := range sequenceJobsToRetry {
-		if j.StepID() == failedJob.StepID() {
+		if j.AtomID() == failedJob.AtomID() {
 			haveFailedJob = true
 			break
 		}
@@ -187,7 +187,7 @@ func (r *reaper) prepareSequenceRetry(failedJob *job.Job) *job.Job {
 	// Roll back completed sequence jobs
 	for _, j := range sequenceJobsToRetry {
 		// Roll back job state to pending so it's runnable again
-		r.grapher.Chain.SetJobState(j.StepID(), state.StateUpForRetry)
+		r.grapher.Chain.SetJobState(j.AtomID(), state.StateUpForRetry)
 	}
 
 	// Running reaper will re-enqueue/re-run seq from this seq start job.
@@ -203,10 +203,10 @@ func (r *reaper) sequenceJobsCompleted(sequenceStartJob *job.Job) []*job.Job {
 	visited := map[atom.AtomID]*job.Job{} // job id -> job visited
 
 	// Process sequenceStartJob
-	for _, pJob := range r.grapher.Chain.NextJobs(sequenceStartJob.StepID()) {
-		toVisit[pJob.StepID()] = pJob
+	for _, pJob := range r.grapher.Chain.NextJobs(sequenceStartJob.AtomID()) {
+		toVisit[pJob.AtomID()] = pJob
 	}
-	visited[sequenceStartJob.StepID()] = sequenceStartJob
+	visited[sequenceStartJob.AtomID()] = sequenceStartJob
 
 PROCESS_TO_VISIT_LIST:
 	for len(toVisit) > 0 {
@@ -227,8 +227,8 @@ PROCESS_TO_VISIT_LIST:
 
 				// Make sure we don't visit a job multiple times. We can see a job
 				// multiple times if it is a "fan in" node.
-				if _, seen := visited[nextJob.StepID()]; !seen {
-					toVisit[nextJob.StepID()] = nextJob
+				if _, seen := visited[nextJob.AtomID()]; !seen {
+					toVisit[nextJob.AtomID()] = nextJob
 				}
 			}
 

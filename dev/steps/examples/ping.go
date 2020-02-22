@@ -13,6 +13,8 @@ import (
 	ping "github.com/sparrc/go-ping"
 )
 
+//go:generate genatom -type=Ping
+
 // Ping ...
 type Ping struct {
 	step.Step
@@ -24,7 +26,6 @@ func NewPing(id, expansionDigest string) *Ping {
 	p := &Ping{}
 	p.ID = id
 	p.ExpansionDigest = expansionDigest
-	p.Type = atom.GenAtomType(p)
 	return p
 }
 

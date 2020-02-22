@@ -86,9 +86,9 @@ func (t *Traverser) Run(ctx context.Context) {
 
 	// Enqueue all the first runnable jobs
 	for _, j := range t.grapher.Chain.RunnableJobs() {
-		node := t.grapher.Chain.Vertices[j.StepID()]
+		node := t.grapher.Chain.Vertices[j.AtomID()]
 		fields := []zapcore.Field{
-			zap.String("job_id", j.StepID().String()),
+			zap.String("job_id", j.AtomID().String()),
 			zap.String("job_name", node.Name),
 		}
 		logger.Info("initial job", fields...)
@@ -191,7 +191,7 @@ func (t *Traverser) runJobs(ctx context.Context) {
 		select {
 		case <-t.stopChan:
 			fields := []zapcore.Field{
-				zap.String("job_id", j.StepID().String()),
+				zap.String("job_id", j.AtomID().String()),
 			}
 			logger.Info("not running job %s: traverser stopped", fields...)
 			continue
@@ -205,9 +205,9 @@ func (t *Traverser) runJobs(ctx context.Context) {
 		// the same loop "j" variable.
 		go func(j job.Job) {
 			fields := []zapcore.Field{
-				zap.String("job_id", j.StepID().String()),
-				zap.String("sequence_id", t.grapher.DAG.Vertices[j.StepID()].SequenceID.String()),
-				zap.Int("sequence_try", int(t.grapher.DAG.Vertices[j.StepID()].SequenceRetry)),
+				zap.String("job_id", j.AtomID().String()),
+				zap.String("sequence_id", t.grapher.DAG.Vertices[j.AtomID()].SequenceID.String()),
+				zap.Int("sequence_try", int(t.grapher.DAG.Vertices[j.AtomID()].SequenceRetry)),
 			}
 
 			// Always send the finished job to doneJobChan to be reaped. If the
@@ -224,33 +224,33 @@ func (t *Traverser) runJobs(ctx context.Context) {
 				// AFTER sending it to doneJobChan. This avoids a race condition
 				// when the stopped + suspended reapers check if the runnerRepo
 				// is empty.
-				t.runnerRepo.Remove(j.StepID().String())
+				t.runnerRepo.Remove(j.AtomID().String())
 			}()
 
 			// Increment sequence try count if this is sequence start job, which
 			// currently means sequenceId == job.Id.
-			if t.grapher.Chain.IsSequenceStartJob(j.StepID()) {
-				t.grapher.Chain.IncrementSequenceTries(j.StepID(), 1)
+			if t.grapher.Chain.IsSequenceStartJob(j.AtomID()) {
+				t.grapher.Chain.IncrementSequenceTries(j.AtomID(), 1)
 				tryFields := append([]zapcore.Field(nil), fields...)
-				tryFields = append(tryFields, zap.Uint("current", t.grapher.Chain.SequenceTries(j.StepID())))
+				tryFields = append(tryFields, zap.Uint("current", t.grapher.Chain.SequenceTries(j.AtomID())))
 				logger.Info("sequence try", tryFields...)
 			}
 
-			totalTries := t.grapher.Chain.JobTries(j.StepID())
+			totalTries := t.grapher.Chain.JobTries(j.AtomID())
 
-			node := t.grapher.Chain.Vertices[j.StepID()]
+			node := t.grapher.Chain.Vertices[j.AtomID()]
 			jobRunner := runner.NewRunner(j, t.grapher.Req, totalTries, node.Name, node.Retry, node.RetryWait, t.logger)
 
 			// Add the runner to the repo. Runners in the repo are used
 			// by the Stop methods on the traverser.
 			// Then decrement pending to signal to stopRunningJobs that
 			// there's one less goroutine it needs to wait for.
-			t.runnerRepo.Set(j.StepID().String(), jobRunner)
+			t.runnerRepo.Set(j.AtomID().String(), jobRunner)
 			atomic.AddInt64(&t.pending, -1)
 
 			// Run the job. This is a blocking operation that could take a long time.
 			logger.Info("running job", fields...)
-			t.grapher.Chain.SetJobState(j.StepID(), state.StateRunning)
+			t.grapher.Chain.SetJobState(j.AtomID(), state.StateRunning)
 			ret := jobRunner.Run(ctx)
 			runFields := append([]zapcore.Field(nil), fields...)
 			runFields = append(runFields, zap.String("state", state.StateText[ret.AtomReturn.State]))
@@ -258,7 +258,7 @@ func (t *Traverser) runJobs(ctx context.Context) {
 
 			// We don't pass the Chain to the job runner, so it can't call this
 			// itself. Instead, it returns how many tries it did, and we set it.
-			t.grapher.Chain.IncrementJobTries(j.StepID(), ret.Tries)
+			t.grapher.Chain.IncrementJobTries(j.AtomID(), ret.Tries)
 
 			// Set job final state because this job is about to be reaped on
 			// the doneJobChan, sent in this goroutine's defer func at top ^.

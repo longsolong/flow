@@ -8,7 +8,7 @@ import (
 
 func TestNoopType(t *testing.T) {
 	noop := NewNoop("", "")
-	assert.Equal(t, "builtin.Noop", noop.Type)
+	assert.Equal(t, "builtin.Noop", noop.AtomID().Type)
 }
 
 func TestNoopRun(t *testing.T) {

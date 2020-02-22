@@ -3,10 +3,11 @@ package builtin
 import (
 	"context"
 	"github.com/longsolong/flow/pkg/orchestration/request"
-
 	"github.com/longsolong/flow/pkg/workflow/atom"
 	"github.com/longsolong/flow/pkg/workflow/step"
 )
+
+//go:generate genatom -type=Noop
 
 // Noop ...
 type Noop struct {
@@ -18,7 +19,6 @@ func NewNoop(id, expansionDigest string) *Noop {
 	n := &Noop{}
 	n.ID = id
 	n.ExpansionDigest = expansionDigest
-	n.Type = atom.GenAtomType(n)
 	return n
 }
 

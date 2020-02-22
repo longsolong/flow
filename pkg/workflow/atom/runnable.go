@@ -3,7 +3,6 @@ package atom
 import (
 	"context"
 	"github.com/longsolong/flow/pkg/workflow/state"
-	"reflect"
 )
 
 // Runnable ...
@@ -18,10 +17,3 @@ type Return struct {
 	Exit  int64       // Unix exit code
 	Error error       // Go error
 }
-
-// GenAtomType ...
-func GenAtomType(r Runnable) string {
-	e := reflect.TypeOf(r).Elem()
-	return e.String()
-}
-
