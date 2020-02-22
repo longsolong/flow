@@ -1,4 +1,6 @@
 PROJECT_NAME := "app"
+PATH := $(PWD)/bin:$(PATH)
+
 MAIN_FILE := "cmd/server/main.go"
 PKG_LIST := $(shell go list ./... | grep -v /vendor/)
 GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)
@@ -50,7 +52,15 @@ testdep: ## Get dev dependencies
 
 run:
 	./bin/$(PROJECT_NAME)
+
+buildgen: dep ## Build gen tools
+	@go build -i -o ./bin/genatom ./cmd/genatom/main.go
+	@go build -i -o ./bin/gengrapher ./cmd/gengrapher/main.go
 	
+gen:
+	@find pkg/workflow/step -name '*.go' | grep -v _test.go | grep -v _atom.go | xargs -n 1 go generate
+	@find dev -name '*.go' | grep -v _test.go | grep -v _atom.go | xargs -n 1 go generate
+
 build: dep ## Build the binary file
 	@go build -i -o ./bin/$(PROJECT_NAME) ./$(MAIN_FILE)
 
