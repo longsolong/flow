@@ -80,6 +80,16 @@ func (g *DAG) GetNode(atomID atom.AtomID) (*Node, error) {
 	return nil, workflow.ErrNotRegisteredNode
 }
 
+// MustGetNode ...
+func (g *DAG) MustGetNode(atomID atom.AtomID) *Node {
+	g.VerticesMux.RLock()
+	defer g.VerticesMux.RUnlock()
+	if node, ok := g.Vertices[atomID]; ok {
+		return node
+	}
+	panic(workflow.ErrNotRegisteredNode)
+}
+
 // SetUpstream ...
 func (n *Node) SetUpstream(upstream *Node) error {
 	n.EdgeMux.Lock()
@@ -93,4 +103,18 @@ func (n *Node) SetUpstream(upstream *Node) error {
 	n.Prev[upstream.Datum.AtomID()] = upstream
 	upstream.Next[n.Datum.AtomID()] = n
 	return nil
+}
+
+// Upstream ...
+func (n *Node) Upstream() map[atom.AtomID]*Node {
+	n.EdgeMux.RLock()
+	defer n.EdgeMux.RUnlock()
+	return n.Prev
+}
+
+// Downstream ...
+func (n *Node) Downstream() map[atom.AtomID]*Node {
+	n.EdgeMux.RLock()
+	defer n.EdgeMux.RUnlock()
+	return n.Next
 }
