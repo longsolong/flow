@@ -26,15 +26,15 @@ func TestNewDAG(t *testing.T) {
 	err = noop2.SetUpstream(noop1)
 	assert.Equal(t, workflow.ErrAlreadyRegisteredUpstream, err)
 
-	upstreams := noop1.Prev
+	upstreams := noop1.Upstream()
 	assert.Equal(t, map[atom.AtomID]*Node{}, upstreams)
 
-	_, ok := noop1.Next[noop2.Datum.AtomID()]
+	_, ok := noop1.Downstream()[noop2.Datum.AtomID()]
 	assert.True(t, ok)
 
-	_, ok = noop2.Prev[noop1.Datum.AtomID()]
+	_, ok = noop2.Upstream()[noop1.Datum.AtomID()]
 	assert.True(t, ok)
 
-	downstreams := noop2.Next
+	downstreams := noop2.Downstream()
 	assert.Equal(t, map[atom.AtomID]*Node{}, downstreams)
 }

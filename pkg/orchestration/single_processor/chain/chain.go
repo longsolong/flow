@@ -13,8 +13,9 @@ import (
 type Chain struct {
 	*dag.DAG
 
-	jobs          map[atom.AtomID]*job.Job
-	jobsMux       *sync.RWMutex        // for access to jobs maps
+	jobs    map[atom.AtomID]*job.Job
+	jobsMux *sync.RWMutex // for access to jobs maps
+
 	triesMux      *sync.RWMutex        // for access to sequence/job tries maps
 	sequenceTries map[atom.AtomID]uint // Number of sequence retries attempted so far
 	totalJobTries map[atom.AtomID]uint // Number of job retries attempted so far
@@ -58,13 +59,9 @@ func (c *Chain) NextJobs(jobID atom.AtomID) []*job.Job {
 	c.jobsMux.RLock()
 	defer c.jobsMux.RUnlock()
 	var nextJobs []*job.Job
-	var node *dag.Node
-	var ok bool
-	if node, ok = c.DAG.Vertices[jobID]; !ok {
-		panic(fmt.Sprintf("jobID %v not found in Vertices", jobID))
-	}
+	node := c.DAG.MustGetNode(jobID)
 
-	for nextJobID := range node.Next {
+	for nextJobID := range node.Downstream() {
 		j := c.jobs[nextJobID]
 		nextJobs = append(nextJobs, j)
 	}
@@ -81,6 +78,8 @@ func (c *Chain) IsRunnable(jobID atom.AtomID) bool {
 
 // RunnableJobs ...
 func (c *Chain) RunnableJobs() (runnableJobs []*job.Job) {
+	c.jobsMux.RLock()
+	defer c.jobsMux.RUnlock()
 	for jobID, j := range c.jobs {
 		if !c.IsRunnable(jobID) {
 			continue
@@ -108,6 +107,8 @@ func (c *Chain) RunnableJobs() (runnableJobs []*job.Job) {
 // independent sequences.
 func (c *Chain) IsDoneRunning() (done bool, complete bool) {
 	c.DAG.VerticesMux.RLock()
+	c.jobsMux.RLock()
+	defer c.jobsMux.RUnlock()
 	defer c.DAG.VerticesMux.RUnlock()
 	complete = true
 	for _, j := range c.jobs {
@@ -131,12 +132,8 @@ func (c *Chain) IsDoneRunning() (done bool, complete bool) {
 // state is StateUnknown || StateUpForRetry || StateMarkRetry and all immediately previous jobs are state COMPLETE.
 func (c *Chain) isRunnable(jobID atom.AtomID) bool {
 	// CALLER MUST LOCK c.DAG.VerticesMux!
-	var node *dag.Node
 	var j *job.Job
 	var ok bool
-	if node, ok = c.DAG.Vertices[jobID]; !ok {
-		panic(fmt.Sprintf("jobID %v not found in Vertices", jobID))
-	}
 	if j, ok = c.jobs[jobID]; !ok {
 		panic(fmt.Sprintf("jobID %v not found in jobs", jobID))
 	}
@@ -144,7 +141,8 @@ func (c *Chain) isRunnable(jobID atom.AtomID) bool {
 		return false
 	}
 	// Check that all previous jobs are complete.
-	for prevJobID := range node.Prev {
+	node := c.DAG.MustGetNode(jobID)
+	for prevJobID := range node.Upstream() {
 		j := c.jobs[prevJobID]
 		if _, ok := state.JobCompleteState[j.State]; !ok {
 			return false
@@ -155,16 +153,14 @@ func (c *Chain) isRunnable(jobID atom.AtomID) bool {
 
 // SequenceStartJob ...
 func (c *Chain) SequenceStartJob(jobID atom.AtomID) *job.Job {
-	c.jobsMux.RLock()
-	defer c.jobsMux.RUnlock()
-	return c.jobs[c.DAG.Vertices[jobID].SequenceID]
+	node := c.DAG.MustGetNode(jobID)
+	return c.jobs[node.SequenceID]
 }
 
 // IsSequenceStartJob ...
 func (c *Chain) IsSequenceStartJob(jobID atom.AtomID) bool {
-	c.jobsMux.RLock()
-	defer c.jobsMux.RUnlock()
-	return jobID == c.DAG.Vertices[jobID].SequenceID
+	node := c.DAG.MustGetNode(jobID)
+	return jobID == node.SequenceID
 }
 
 // CanRetrySequence ...
@@ -172,7 +168,8 @@ func (c *Chain) CanRetrySequence(jobID atom.AtomID) bool {
 	sequenceStartJob := c.SequenceStartJob(jobID)
 	c.triesMux.RLock()
 	defer c.triesMux.RUnlock()
-	return c.sequenceTries[sequenceStartJob.AtomID()] <= c.DAG.Vertices[sequenceStartJob.AtomID()].SequenceRetry
+	node := c.DAG.MustGetNode(sequenceStartJob.AtomID())
+	return c.sequenceTries[sequenceStartJob.AtomID()] <= node.SequenceRetry
 }
 
 // IncrementJobTries ...
@@ -193,16 +190,16 @@ func (c *Chain) JobTries(jobID atom.AtomID) uint {
 
 // IncrementSequenceTries ...
 func (c *Chain) IncrementSequenceTries(jobID atom.AtomID, delta uint) {
-	seqID := c.DAG.Vertices[jobID].SequenceID
+	node := c.DAG.MustGetNode(jobID)
 	c.triesMux.Lock()
-	c.sequenceTries[seqID] += delta
-	c.triesMux.Unlock()
+	defer c.triesMux.Unlock()
+	c.sequenceTries[node.SequenceID] += delta
 }
 
 // SequenceTries ...
 func (c *Chain) SequenceTries(jobID atom.AtomID) uint {
-	seqID := c.DAG.Vertices[jobID].SequenceID
+	node := c.DAG.MustGetNode(jobID)
 	c.triesMux.RLock()
 	defer c.triesMux.RUnlock()
-	return c.sequenceTries[seqID]
+	return c.sequenceTries[node.SequenceID]
 }

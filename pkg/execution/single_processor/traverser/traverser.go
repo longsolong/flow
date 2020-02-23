@@ -86,7 +86,7 @@ func (t *Traverser) Run(ctx context.Context) {
 
 	// Enqueue all the first runnable jobs
 	for _, j := range t.grapher.Chain.RunnableJobs() {
-		node := t.grapher.Chain.Vertices[j.AtomID()]
+		node := t.grapher.Chain.MustGetNode(j.AtomID())
 		fields := []zapcore.Field{
 			zap.String("job_id", j.AtomID().String()),
 			zap.String("job_name", node.Name),
@@ -204,10 +204,11 @@ func (t *Traverser) runJobs(ctx context.Context) {
 		// Explicitly pass the job into the func, or all goroutines would share
 		// the same loop "j" variable.
 		go func(j job.Job) {
+			node := t.grapher.DAG.MustGetNode(j.AtomID())
 			fields := []zapcore.Field{
 				zap.String("job_id", j.AtomID().String()),
-				zap.String("sequence_id", t.grapher.DAG.Vertices[j.AtomID()].SequenceID.String()),
-				zap.Int("sequence_try", int(t.grapher.DAG.Vertices[j.AtomID()].SequenceRetry)),
+				zap.String("sequence_id", node.SequenceID.String()),
+				zap.Int("sequence_try", int(node.SequenceRetry)),
 			}
 
 			// Always send the finished job to doneJobChan to be reaped. If the
@@ -238,7 +239,6 @@ func (t *Traverser) runJobs(ctx context.Context) {
 
 			totalTries := t.grapher.Chain.JobTries(j.AtomID())
 
-			node := t.grapher.Chain.Vertices[j.AtomID()]
 			jobRunner := runner.NewRunner(j, t.grapher.Req, totalTries, node.Name, node.Retry, node.RetryWait, t.logger)
 
 			// Add the runner to the repo. Runners in the repo are used

@@ -108,13 +108,14 @@ func (r *RunningChainReaper) Stop(ctx context.Context) {
 // If job failed:    retry sequence if possible.
 // If job completed: prepared subsequent jobs and enqueue if runnable.
 func (r *RunningChainReaper) Reap(job *job.Job) {
+	node := r.grapher.Chain.DAG.MustGetNode(job.AtomID())
 	fields := []zapcore.Field{
 		zap.String("job_id", job.AtomID().String()),
 	}
 	sequenceFields := append([]zapcore.Field(nil), fields...)
 	sequenceFields = append(sequenceFields, []zapcore.Field{
-		zap.String("sequence_id", r.grapher.Chain.DAG.Vertices[job.AtomID()].SequenceID.String()),
-		zap.Int("sequence_try", int(r.grapher.Chain.DAG.Vertices[job.AtomID()].SequenceRetry)),
+		zap.String("sequence_id", node.SequenceID.String()),
+		zap.Int("sequence_try", int(node.SequenceRetry)),
 	}...)
 
 	logger := r.logger.Log
