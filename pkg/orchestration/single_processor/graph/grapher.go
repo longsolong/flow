@@ -2,6 +2,7 @@ package graph
 
 import (
 	"github.com/longsolong/flow/pkg/orchestration/request"
+	"github.com/longsolong/flow/pkg/orchestration/graph"
 	"github.com/longsolong/flow/pkg/orchestration/single_processor/chain"
 	"github.com/longsolong/flow/pkg/workflow/dag"
 )
@@ -12,12 +13,12 @@ type Grapher struct {
 
 	*dag.DAG
 	*chain.Chain
-	GraphPlotter
+	graph.GraphPlotter
 }
 
 // NewGrapher A new Grapher should be made for every request.
 func NewGrapher(
-	req *request.Request, d *dag.DAG, c *chain.Chain, p GraphPlotter) *Grapher {
+	req *request.Request, d *dag.DAG, c *chain.Chain, p graph.GraphPlotter) *Grapher {
 
 	g := &Grapher{
 		Req: req,

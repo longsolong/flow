@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/longsolong/flow/dev/workflows/single_processor_examples/ping"
+	"github.com/longsolong/flow/dev/workflows/single_processor_examples/numberguess"
 	"github.com/longsolong/flow/pkg/execution/single_processor/traverser"
 	"github.com/longsolong/flow/pkg/infra"
 	"github.com/longsolong/flow/pkg/orchestration/single_processor/graph"
@@ -21,8 +21,8 @@ type singleProcessorFactory struct{}
 func (gf *singleProcessorFactory) Make(ctx context.Context, logger *infra.Logger, namespace, name string, version int, rawRequestData []byte) (g *graph.Grapher, err error) {
 	if namespace == "single_processor_examples" {
 		switch {
-		case name == ping.NAME && version == ping.VERSION:
-			g, err = ping.NewGrapher(ctx, rawRequestData)
+		case name == numberguess.NAME && version == numberguess.VERSION:
+			g, err = numberguess.NewGrapher(ctx, rawRequestData)
 			if err != nil {
 				return nil, err
 			}

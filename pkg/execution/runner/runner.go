@@ -9,6 +9,7 @@ import (
 	"github.com/longsolong/flow/pkg/orchestration/job"
 	"github.com/longsolong/flow/pkg/orchestration/request"
 	"github.com/longsolong/flow/pkg/workflow/atom"
+	flowcontext "github.com/longsolong/flow/pkg/workflow/context"
 	"github.com/longsolong/flow/pkg/workflow/state"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -44,7 +45,7 @@ type runner struct {
 	req     *request.Request
 
 	totalTries uint // try count all seq tries
-	maxTries   uint // max tries per seq try, not global maxTry in request spec (once implemented)
+	maxTries   uint // max tries per seq try
 	retryWait  time.Duration
 	stopChan   chan struct{}
 	mux        *sync.Mutex
@@ -102,6 +103,8 @@ TRY_LOOP:
 		// Run the job. Use a separate method so we can easily recover from a panic
 		// in job.Run.
 		logger.Info("job start", tryFields...)
+		ctx = context.WithValue(ctx, flowcontext.FlowContextKey("totalTries"), r.totalTries)
+		ctx = context.WithValue(ctx, flowcontext.FlowContextKey("maxTries"), r.maxTries)
 		startedAt, finishedAt, jobRet, runErr := r.runJob(ctx)
 		runtime := time.Duration(finishedAt-startedAt) * time.Nanosecond
 		runFields := append([]zapcore.Field(nil), fields...)
@@ -145,11 +148,11 @@ TRY_LOOP:
 		r.mux.Unlock()
 		select {
 		case <-time.After(r.retryWait):
+			// Job failed, wait and retry?
 			r.mux.Lock()
 			r.sleeping = false
 			r.mux.Unlock()
 		case <-r.stopChan:
-			// Job failed, wait and retry?
 			waitRetryFields := append([]zapcore.Field(nil), fields...)
 			waitRetryFields = append(waitRetryFields, []zapcore.Field{
 				zap.Uint("total_tries", r.totalTries),

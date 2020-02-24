@@ -1,6 +1,7 @@
 package job
 
 import (
+	"encoding/json"
 	"github.com/longsolong/flow/pkg/workflow/atom"
 	"github.com/longsolong/flow/pkg/workflow/state"
 )
@@ -17,4 +18,12 @@ func NewJob(step atom.Atom) *Job {
 		Atom:        step,
 		State:       state.StateUnknown,
 	}
+}
+
+func (j Job) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"Atom": j.Atom,
+		"State": j.State,
+		"StateText": state.StateText[j.State],
+	})
 }

@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 
@@ -52,14 +53,20 @@ func (h SingleProcessorFlowHandler) Run() http.HandlerFunc {
 		namespace := data["primaryRequestArgs"].(map[string]interface{})["namespace"]
 		name := data["primaryRequestArgs"].(map[string]interface{})["name"]
 		version := data["primaryRequestArgs"].(map[string]interface{})["version"]
-		_, err = workflows.SingleProcessorFactory.Make(
+		grapher, err := workflows.SingleProcessorFactory.Make(
 			context.WithValue(r.Context(), flowcontext.FlowContextKey("logger"), h.logger),
 			h.logger, namespace.(string), name.(string), int(version.(float64)), body)
 		if err != nil {
 			jio.DefaultErrorHandler(w, r, err)
 			return
 		}
+		b, err := json.Marshal(grapher.Chain.AllJobs())
+		if err != nil {
+			jio.DefaultErrorHandler(w, r, err)
+			return
+		}
 		w.WriteHeader(http.StatusOK)
+		w.Write(b)
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		return
 	}

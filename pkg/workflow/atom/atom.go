@@ -23,3 +23,7 @@ type AtomID struct {
 func (id AtomID) String() string {
 	return fmt.Sprintf("AtomID: %s.%s.%s", id.Type, id.ID, id.ExpansionDigest)
 }
+
+func (id AtomID) IsEmpty() bool {
+	return id.Type == "" && id.ID == "" && id.ExpansionDigest == ""
+}

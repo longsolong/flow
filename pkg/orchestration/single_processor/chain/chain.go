@@ -54,6 +54,14 @@ func (c *Chain) AddJob(j *job.Job) {
 	c.jobs[j.AtomID()] = j
 }
 
+// AllJobs ...
+func (c *Chain) AllJobs() (allJobs []*job.Job) {
+	for _, j := range c.jobs {
+		allJobs = append(allJobs, j)
+	}
+	return allJobs
+}
+
 // NextJobs finds all of the jobs adjacent to the given job.
 func (c *Chain) NextJobs(jobID atom.AtomID) []*job.Job {
 	c.jobsMux.RLock()
@@ -154,6 +162,9 @@ func (c *Chain) isRunnable(jobID atom.AtomID) bool {
 // SequenceStartJob ...
 func (c *Chain) SequenceStartJob(jobID atom.AtomID) *job.Job {
 	node := c.DAG.MustGetNode(jobID)
+	if node.SequenceID.IsEmpty() {
+		return nil
+	}
 	return c.jobs[node.SequenceID]
 }
 
@@ -166,6 +177,9 @@ func (c *Chain) IsSequenceStartJob(jobID atom.AtomID) bool {
 // CanRetrySequence ...
 func (c *Chain) CanRetrySequence(jobID atom.AtomID) bool {
 	sequenceStartJob := c.SequenceStartJob(jobID)
+	if sequenceStartJob == nil {
+		return false
+	}
 	c.triesMux.RLock()
 	defer c.triesMux.RUnlock()
 	node := c.DAG.MustGetNode(sequenceStartJob.AtomID())
