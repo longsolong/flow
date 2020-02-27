@@ -14,14 +14,10 @@ func TestNewDAG(t *testing.T) {
 	noop1 := NewNode(builtin.NewNoop("1", ""), "noop1", 0, time.Duration(0))
 	noop2 := NewNode(builtin.NewNoop("2", ""), "noop2", 0, time.Duration(0))
 
-	err := dag.AddNode(noop1)
-	assert.Nil(t, err)
-	err = dag.AddNode(noop2)
-	assert.Nil(t, err)
-	err = dag.AddNode(noop2)
-	assert.Equal(t, workflow.ErrAlreadyRegisteredNode, err)
+	dag.MustAddNode(noop1)
+	dag.MustAddNode(noop2)
 
-	err = noop2.SetUpstream(noop1)
+	err := noop2.SetUpstream(noop1)
 	assert.Nil(t, err)
 	err = noop2.SetUpstream(noop1)
 	assert.Equal(t, workflow.ErrAlreadyRegisteredUpstream, err)

@@ -85,15 +85,18 @@ func (t *Traverser) Run(ctx context.Context) {
 	go t.runJobs(ctx)
 
 	// Enqueue all the first runnable jobs
-	for _, j := range t.grapher.Chain.RunnableJobs() {
-		node := t.grapher.Chain.MustGetNode(j.AtomID())
-		fields := []zapcore.Field{
-			zap.String("job_id", j.AtomID().String()),
-			zap.String("job_name", node.Name),
+	initialJobs := t.grapher.Chain.RunnableJobs()
+	go func() {
+		for _, j := range initialJobs {
+			node := t.grapher.Chain.MustGetNode(j.AtomID())
+			fields := []zapcore.Field{
+				zap.String("job_id", j.AtomID().String()),
+				zap.String("job_name", node.Name),
+			}
+			logger.Info("initial job", fields...)
+			t.runJobChan <- *j
 		}
-		logger.Info("initial job", fields...)
-		t.runJobChan <- *j
-	}
+	}()
 
 	// Start a goroutine to reap done jobs. The runningReaper consumes from
 	// doneJobChan and sends the next jobs to be run to runJobChan. Stop()
@@ -229,7 +232,7 @@ func (t *Traverser) runJobs(ctx context.Context) {
 			}()
 
 			// Increment sequence try count if this is sequence start job, which
-			// currently means sequenceId == job.Id.
+			// currently means sequenceID == job.AtomID.
 			if t.grapher.Chain.IsSequenceStartJob(j.AtomID()) {
 				t.grapher.Chain.IncrementSequenceTries(j.AtomID(), 1)
 				tryFields := append([]zapcore.Field(nil), fields...)

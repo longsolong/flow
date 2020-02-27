@@ -59,15 +59,14 @@ func NewNode(a atom.Atom, name string, retry uint, retryWait time.Duration) *Nod
 	}
 }
 
-// AddNode ...
-func (g *DAG) AddNode(node *Node) error {
+// MustAddNode ...
+func (g *DAG) MustAddNode(node *Node) {
 	g.VerticesMux.Lock()
 	defer g.VerticesMux.Unlock()
 	if _, ok := g.Vertices[node.Datum.AtomID()]; ok {
-		return workflow.ErrAlreadyRegisteredNode
+		panic(workflow.ErrAlreadyRegisteredNode)
 	}
 	g.Vertices[node.Datum.AtomID()] = node
-	return nil
 }
 
 // GetNode ...

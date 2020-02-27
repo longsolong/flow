@@ -17,14 +17,11 @@ func TestRunFlowHandler(t *testing.T) {
 	payload := `{
 		"primaryRequestArgs": {
 			"namespace": "single_processor_examples",
-			"name": "ping",
+			"name": "number_guess",
 			"version": 1
 		},
 		"requestArgs": {
-			"hostname": "www.baidu.com",
-			"timeout":  10,
-			"interval": 1,
-			"count":    1
+			"secret": 1
 		},
 		"requestTags": [
 			{"name": "aa", "value": "bb"}

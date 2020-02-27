@@ -2,18 +2,14 @@ package graph
 
 import (
 	"context"
+	"github.com/longsolong/flow/pkg/orchestration/job"
+	"time"
 
 	"github.com/longsolong/flow/pkg/orchestration/request"
 	"github.com/longsolong/flow/pkg/orchestration/single_processor/chain"
+	"github.com/longsolong/flow/pkg/workflow/atom"
 	"github.com/longsolong/flow/pkg/workflow/dag"
 )
-
-// GraphPlotter ...
-type GraphPlotter interface {
-	Begin(ctx context.Context, req *request.Request) error
-	Grow(ctx context.Context)
-	Done() <-chan struct{}
-}
 
 // Plotter ...
 type Plotter struct {
@@ -36,4 +32,14 @@ func (p *Plotter) Done() <-chan struct{} {
 
 func (p *Plotter) Close() {
 	close(p.done)
+}
+
+func (p *Plotter) NewNode(ctx context.Context, req *request.Request, step atom.Atom, name string, retry uint, retryWait time.Duration) (*dag.Node, error) {
+	if err := step.Create(ctx, req); err != nil {
+		return nil, err
+	}
+	node := dag.NewNode(step, name, retry, retryWait)
+	p.DAG.MustAddNode(node)
+	p.Chain.AddJob(job.NewJob(step))
+	return node, nil
 }
