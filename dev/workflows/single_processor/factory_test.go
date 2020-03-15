@@ -1,4 +1,4 @@
-package workflows
+package single_processor
 
 import (
 	"context"
@@ -10,13 +10,13 @@ import (
 	flowcontext "github.com/longsolong/flow/pkg/workflow/context"
 )
 
-func TestNewDAG(t *testing.T) {
+func TestNewGrapher(t *testing.T) {
 	logger, err := infra.CreateLogger(0)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	namespace := "single_processor_examples"
+	namespace := "examples"
 	name := "number_guess"
 	version := 1
 
@@ -24,7 +24,7 @@ func TestNewDAG(t *testing.T) {
 	baseCtx := valv.Context()
 	body := []byte(`{
 		"primaryRequestArgs": {
-			"namespace": "single_processor_examples",
+			"namespace": "examples",
 			"name": "number_guess",
 			"version": 1
 		},
@@ -36,7 +36,7 @@ func TestNewDAG(t *testing.T) {
 		]
 	}`)
 	_, err = SingleProcessorFactory.Make(
-		context.WithValue(baseCtx, flowcontext.FlowContextKey("logger"), logger),
+		context.WithValue(baseCtx, flowcontext.LoggerCtxKey, logger),
 		logger, namespace, name, version, body)
 	assert.Nil(t, err)
 }

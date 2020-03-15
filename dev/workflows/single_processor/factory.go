@@ -1,11 +1,11 @@
-package workflows
+package single_processor
 
 import (
 	"context"
 	"fmt"
+	"github.com/longsolong/flow/dev/workflows/single_processor/examples/numberguess"
 	"time"
 
-	"github.com/longsolong/flow/dev/workflows/single_processor_examples/numberguess"
 	"github.com/longsolong/flow/pkg/execution/single_processor/traverser"
 	"github.com/longsolong/flow/pkg/infra"
 	"github.com/longsolong/flow/pkg/orchestration/single_processor/graph"
@@ -19,7 +19,7 @@ type singleProcessorFactory struct{}
 
 // Make
 func (gf *singleProcessorFactory) Make(ctx context.Context, logger *infra.Logger, namespace, name string, version int, rawRequestData []byte) (g *graph.Grapher, err error) {
-	if namespace == "single_processor_examples" {
+	if namespace == "examples" {
 		switch {
 		case name == numberguess.NAME && version == numberguess.VERSION:
 			g, err = numberguess.NewGrapher(ctx, rawRequestData)

@@ -56,10 +56,11 @@ run:
 buildgen: dep ## Build gen tools
 	@go build -i -o ./bin/genatom ./cmd/genatom/main.go
 	@go build -i -o ./bin/gengrapher ./cmd/gengrapher/main.go
+	@go build -i -o ./bin/genaccessor ./cmd/genaccessor/main.go
 	
 gen:
-	@find pkg/workflow/step -name '*.go' | grep -v _test.go | grep -v _atom.go | xargs -n 1 go generate
-	@find dev -name '*.go' | grep -v _test.go | grep -v _atom.go | xargs -n 1 go generate
+	@find pkg/workflow/step -name '*.go' | grep -v _test.go | grep -v _atom.go | grep -v _grapher.go | grep -v _accessor.go | xargs -n 1 go generate
+	@find dev -name '*.go' | grep -v _test.go | grep -v _atom.go | grep -v _grapher.go | grep -v _accessor.go | xargs -n 1 go generate
 
 build: dep ## Build the binary file
 	@go build -i -o ./bin/$(PROJECT_NAME) ./$(MAIN_FILE)

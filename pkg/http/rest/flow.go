@@ -3,12 +3,14 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"github.com/go-chi/valve"
+	"github.com/longsolong/flow/dev/workflows/pipeline"
+	"github.com/longsolong/flow/dev/workflows/single_processor"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/faceair/jio"
 	"github.com/go-chi/chi"
-	"github.com/longsolong/flow/dev/workflows"
 	"github.com/longsolong/flow/pkg/infra"
 	flowcontext "github.com/longsolong/flow/pkg/workflow/context"
 )
@@ -18,6 +20,10 @@ func (h *Handler) NewFlowHandler(logger *infra.Logger) {
 	singleProcessorFlowHandler := SingleProcessorFlowHandler{logger: logger}
 	h.router.Route("/api/single_processor/flows", func(r chi.Router) {
 		r.With(jio.ValidateBody(RunFlowValidator, jio.DefaultErrorHandler)).Post("/run", singleProcessorFlowHandler.Run())
+	})
+	pipelineFlowHandler := PipelineFlowHandler{logger: logger}
+	h.router.Route("/api/pipeline/flows", func(r chi.Router) {
+		r.With(jio.ValidateBody(RunFlowValidator, jio.DefaultErrorHandler)).Post("/run", pipelineFlowHandler.Run())
 	})
 }
 
@@ -50,11 +56,14 @@ func (h SingleProcessorFlowHandler) Run() http.HandlerFunc {
 			jio.DefaultErrorHandler(w, r, err)
 			return
 		}
+		valv := valve.New()
+		baseCtx := valv.Context()
+		r = r.WithContext(baseCtx)
 		namespace := data["primaryRequestArgs"].(map[string]interface{})["namespace"]
 		name := data["primaryRequestArgs"].(map[string]interface{})["name"]
 		version := data["primaryRequestArgs"].(map[string]interface{})["version"]
-		grapher, err := workflows.SingleProcessorFactory.Make(
-			context.WithValue(r.Context(), flowcontext.FlowContextKey("logger"), h.logger),
+		grapher, err := single_processor.SingleProcessorFactory.Make(
+			context.WithValue(r.Context(), flowcontext.LoggerCtxKey, h.logger),
 			h.logger, namespace.(string), name.(string), int(version.(float64)), body)
 		if err != nil {
 			jio.DefaultErrorHandler(w, r, err)
@@ -67,6 +76,44 @@ func (h SingleProcessorFlowHandler) Run() http.HandlerFunc {
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write(b)
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		return
+	}
+	return fn
+}
+
+// PipelineFlowHandler ...
+type PipelineFlowHandler struct {
+	logger   *infra.Logger
+}
+
+// Run ...
+func (h PipelineFlowHandler) Run() http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			jio.DefaultErrorHandler(w, r, err)
+			return
+		}
+		data, err := jio.ValidateJSON(&body, RunFlowValidator)
+		if err != nil {
+			jio.DefaultErrorHandler(w, r, err)
+			return
+		}
+		valv := valve.New()
+		baseCtx := valv.Context()
+		r = r.WithContext(baseCtx)
+		namespace := data["primaryRequestArgs"].(map[string]interface{})["namespace"]
+		name := data["primaryRequestArgs"].(map[string]interface{})["name"]
+		version := data["primaryRequestArgs"].(map[string]interface{})["version"]
+		_, err = pipeline.PipelineFactory.Make(
+			context.WithValue(r.Context(), flowcontext.LoggerCtxKey, h.logger),
+			h.logger, namespace.(string), name.(string), int(version.(float64)), body)
+		if err != nil {
+			jio.DefaultErrorHandler(w, r, err)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		return
 	}
