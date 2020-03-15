@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/faceair/jio"
-	"github.com/longsolong/flow/dev/steps/examples/numberguess"
+	"github.com/longsolong/flow/dev/steps/single_processor/examples/numberguess"
 	"github.com/longsolong/flow/pkg/orchestration/request"
 	"github.com/longsolong/flow/pkg/orchestration/single_processor/graph"
 )
@@ -33,11 +33,20 @@ type plotter struct {
 	graph.Plotter
 }
 
+
+//go:generate genaccessor -type=numberGuessParam
+
+type numberGuessParam struct {
+	Secret int
+	Low    int
+	High   int
+}
+
 func (p *plotter) Begin(ctx context.Context, req *request.Request) error {
 	if _, err := p.NewNode(
 		ctx, req,
 		numberguess.NewNumberGuess("", "", &numberGuessParam{}),
-		"try guess number by binary search", 5, time.Duration(10)*time.Millisecond); err != nil {
+		"try guess number by binary search", 6, time.Duration(10)*time.Millisecond); err != nil {
 		return err
 	}
 	return nil

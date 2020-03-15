@@ -3,7 +3,6 @@ package numberguess
 import (
 	"context"
 	"fmt"
-	"github.com/longsolong/flow/pkg/infra"
 	"github.com/longsolong/flow/pkg/orchestration/request"
 	"github.com/longsolong/flow/pkg/workflow/atom"
 	flowcontext "github.com/longsolong/flow/pkg/workflow/context"
@@ -24,13 +23,14 @@ type NumberGuess struct {
 	NumberGuessParameter
 }
 
+// NumberGuessParameter ...
 type NumberGuessParameter interface {
 	MustSetSecret(secret int)
-	Secret() int
+	GetSecret() int
 	MustSetLow(low int)
-	Low() int
+	GetLow() int
 	MustSetHigh(high int)
-	High() int
+	GetHigh() int
 }
 
 // NewNumberGuess ...
@@ -43,7 +43,7 @@ func NewNumberGuess(id, expansionDigest string, parameter NumberGuessParameter) 
 
 // Create ...
 func (s *NumberGuess) Create(ctx context.Context, req *request.Request) error {
-	logger := ctx.Value(flowcontext.FlowContextKey("logger")).(*infra.Logger)
+	logger := flowcontext.Logger(ctx)
 	secret := int(req.RequestArgs["secret"].(float64))
 	s.MustSetSecret(secret)
 	s.MustSetLow(LOW)
@@ -55,10 +55,10 @@ func (s *NumberGuess) Create(ctx context.Context, req *request.Request) error {
 // Run ...
 func (s *NumberGuess) Run(ctx context.Context) (atom.Return, error) {
 	ret := atom.Return{}
-	secret := s.Secret()
-	low := s.Low()
-	high := s.High()
-	logger := ctx.Value(flowcontext.FlowContextKey("logger")).(*infra.Logger)
+	secret := s.GetSecret()
+	low := s.GetLow()
+	high := s.GetHigh()
+	logger := flowcontext.Logger(ctx)
 	totalTries := ctx.Value(flowcontext.FlowContextKey("totalTries")).(uint)
 	guess := (low + high) / 2
 	logger.Log.Info(fmt.Sprintf("%d guess is %d", totalTries, guess))

@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"go/ast"
 	"go/format"
+	"go/parser"
+	"go/token"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"golang.org/x/tools/go/packages"
 )
 
 var (
@@ -34,6 +35,12 @@ func (s *%[1]s) AtomID() atom.AtomID {
 	}
 }
 `
+
+const fileSuffix string = "_atom.go"
+
+func sourceFilter(fi os.FileInfo) bool {
+	return !strings.HasSuffix(fi.Name(), "_test.go") && !strings.HasSuffix(fi.Name(), fileSuffix)
+}
 
 // Usage is a replacement usage function for the flags package.
 func Usage() {
@@ -70,7 +77,7 @@ func main() {
 	src := g.format()
 
 	// Write to file.
-	baseName := fmt.Sprintf("%s_atom.go", *typeName)
+	baseName := fmt.Sprintf("%s%s", *typeName, fileSuffix)
 	outputName := filepath.Join(".", strings.ToLower(baseName))
 	err := ioutil.WriteFile(outputName, src, 0644)
 	if err != nil {
@@ -96,24 +103,24 @@ type Package struct {
 // parsePackage analyzes the single package constructed from the patterns and tags.
 // parsePackage exits if there is an error.
 func (g *Generator) parsePackage() {
-	cfg := &packages.Config{
-		Mode:  packages.NeedName,
-		Tests: false,
-	}
-	pkgs, err := packages.Load(cfg, ".")
+	fset := token.NewFileSet()
+	pkgs, err := parser.ParseDir(fset, ".", sourceFilter, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
 	if len(pkgs) != 1 {
 		log.Fatalf("error: %d packages found", len(pkgs))
 	}
-	g.addPackage(pkgs[0])
+	g.addPackage(pkgs)
 }
 
 // addPackage adds a type checked Package and its syntax files to the generator.
-func (g *Generator) addPackage(pkg *packages.Package) {
-	g.pkg = &Package{
-		name: pkg.Name,
+func (g *Generator) addPackage(pkgs map[string]*ast.Package) {
+	for pkgName := range pkgs {
+		g.pkg = &Package{
+			name: pkgName,
+		}
+		break
 	}
 }
 

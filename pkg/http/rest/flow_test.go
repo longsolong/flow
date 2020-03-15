@@ -16,7 +16,7 @@ func TestRunFlowHandler(t *testing.T) {
 	uri := "/api/single_processor/flows/run"
 	payload := `{
 		"primaryRequestArgs": {
-			"namespace": "single_processor_examples",
+			"namespace": "examples",
 			"name": "number_guess",
 			"version": 1
 		},
@@ -55,7 +55,7 @@ func TestRunFlowHandler(t *testing.T) {
 	}
 
 	// Check the response body is what we expect.
-	expected := ``
+	expected := `[{"Atom":{"ID":"","ExpansionDigest":"","NumberGuessParameter":{"Secret":1,"Low":1,"High":1}},"State":0,"StateText":"SUCCESS"}]`
 	if rr.Body.String() != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), expected)
