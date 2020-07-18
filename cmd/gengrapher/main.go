@@ -24,7 +24,7 @@ const importStmt = `import (
 
 	"github.com/faceair/jio"
 	"github.com/longsolong/flow/pkg/orchestration/request"
-	"github.com/longsolong/flow/pkg/orchestration/single_processor/graph"
+	"github.com/longsolong/flow/pkg/orchestration/standalone/graph"
 )
 `
 

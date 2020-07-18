@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"github.com/go-chi/valve"
 	"github.com/longsolong/flow/dev/workflows/pipeline"
-	"github.com/longsolong/flow/dev/workflows/single_processor"
+	"github.com/longsolong/flow/dev/workflows/standalone"
 	"io/ioutil"
 	"net/http"
 
@@ -18,7 +18,7 @@ import (
 // NewFlowHandler add route for flow
 func (h *Handler) NewFlowHandler(logger *infra.Logger) {
 	singleProcessorFlowHandler := SingleProcessorFlowHandler{logger: logger}
-	h.router.Route("/api/single_processor/flows", func(r chi.Router) {
+	h.router.Route("/api/standalone/flows", func(r chi.Router) {
 		r.With(jio.ValidateBody(RunFlowValidator, jio.DefaultErrorHandler)).Post("/run", singleProcessorFlowHandler.Run())
 	})
 	pipelineFlowHandler := PipelineFlowHandler{logger: logger}
@@ -62,7 +62,7 @@ func (h SingleProcessorFlowHandler) Run() http.HandlerFunc {
 		namespace := data["primaryRequestArgs"].(map[string]interface{})["namespace"]
 		name := data["primaryRequestArgs"].(map[string]interface{})["name"]
 		version := data["primaryRequestArgs"].(map[string]interface{})["version"]
-		grapher, err := single_processor.SingleProcessorFactory.Make(
+		grapher, err := standalone.SingleProcessorFactory.Make(
 			context.WithValue(r.Context(), flowcontext.LoggerCtxKey, h.logger),
 			h.logger, namespace.(string), name.(string), int(version.(float64)), body)
 		if err != nil {
