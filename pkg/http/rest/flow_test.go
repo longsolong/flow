@@ -13,7 +13,7 @@ import (
 
 func TestRunFlowHandler(t *testing.T) {
 	method := "POST"
-	uri := "/api/single_processor/flows/run"
+	uri := "/api/standalone/flows/run"
 	payload := `{
 		"primaryRequestArgs": {
 			"namespace": "examples",
