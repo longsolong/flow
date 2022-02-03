@@ -1,11 +1,11 @@
-PROJECT_NAME := "app"
-PKG := "gitlab.com/marvincaspar/$(PROJECT_NAME)"
-MAIN_FILE := "cmd/server/main.go"
+PROJECT_NAME := $(APP_NAME)
+MAIN_PACKAGE := "cmd/apiserver"
 PKG_LIST := $(shell go list ./... | grep -v /vendor/)
 GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)
+WIRE_FILES := $(shell find . -name 'wire.go' | grep -v /vendor/)
+
 # https://github.com/golangci/awesome-go-linters
 LINTERS := \
-	github.com/rakyll/gotest \
 	golang.org/x/lint/golint \
 	honnef.co/go/tools/cmd/staticcheck
 
@@ -16,15 +16,22 @@ all: build
 init: dep testdep ## Download dependencies and add git hooks
 	find .git/hooks -type l -exec rm {} \;
 	find githooks -type f -exec ln -sf ../../{} .git/hooks/ \;
+	go env -w GOPROXY=https://goproxy.cn,direct
 
 lint: testdep ## Lint files
-	@golint -set_exit_status ${PKG_LIST}
+	@`go env GOPATH`/bin/golint -set_exit_status ${PKG_LIST}
 
 vet: testdep ## Checks correctness 
 	@go vet ${PKG_LIST}
 
 staticcheck: testdep ## Analyses code
-	staticcheck ${PKG_LIST}
+	@`go env GOPATH`/bin/staticcheck ${PKG_LIST}
+
+install-golangci-lint: ## 在项目目录外手动执行
+	@go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.35.2
+
+golangci-lint: testdep
+	@`go env GOPATH`/bin/golangci-lint run
 
 test: ## Run unit tests
 	@go test -short ${PKG_LIST}
@@ -50,10 +57,20 @@ testdep: ## Get dev dependencies
 	@go get -v $(LINTERS)
 
 run:
-	./bin/$(PROJECT_NAME)
-	
+	./bin/$(PROJECT_NAME) serve
+
 build: dep ## Build the binary file
-	@go build -i -o ./bin/$(PROJECT_NAME) ./$(MAIN_FILE)
+	@go build -i -o ./bin/$(PROJECT_NAME) ./$(MAIN_PACKAGE)
+
+wiregen:
+	echo $(WIRE_FILES) | xargs sh -c 'for filename; do `go env GOPATH`/bin/wire "$$(dirname $$filename)"; done' sh
+
+generate:
+	@go generate
+
+dev:
+	make build
+	make run
 
 clean: ## Remove previous build
 	@rm -f ./bin

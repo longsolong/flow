@@ -11,9 +11,9 @@ PASS=true
 
 for FILE in $PKG_LIST
 do
-  goimports -w $FILE
+  `go env GOPATH`/bin/goimports -w $FILE
 
-  golint "-set_exit_status" $FILE
+  `go env GOPATH`/bin/golint "-set_exit_status" $FILE
   if [[ $? == 1 ]]; then
     PASS=false
   fi

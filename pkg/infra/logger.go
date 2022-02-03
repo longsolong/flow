@@ -2,29 +2,32 @@ package infra
 
 import (
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"github.com/marvincaspar/go-web-app-boilerplate/pkg/setting"
 )
 
 // Logger represents a logger
 type Logger struct {
-	Log *zap.Logger
+	Zap      *zap.Logger
+	SugarZap *zap.SugaredLogger
 }
 
-// CreateLogger creates a logger instance for all components
-func CreateLogger(level int) (*Logger, error) {
-	config := zap.NewProductionConfig()
-	config.Level = zap.NewAtomicLevelAt(zapcore.Level(level))
-	logger, err := config.Build()
+// MustNewLogger creates a logger instance for all components
+func MustNewLogger(appConfig *setting.AppConfig) *Logger {
+	var logger *zap.Logger
+	var err error
+	if appConfig.Env == "prod" {
+		logger, err = zap.NewProduction()
+	} else {
+		logger, err = zap.NewDevelopment()
+	}
+
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	defer logger.Sync()
-	return &Logger{
-		Log: logger,
-	}, nil
-}
 
-// WithFields creates an entry from the standard logger and adds multiple fields to it
-func (l *Logger) WithFields(fields ...zap.Field) *zap.Logger {
-	return l.Log.With(fields...)
+	return &Logger{
+		Zap:      logger,
+		SugarZap: logger.Sugar(),
+	}
 }

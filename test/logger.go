@@ -11,6 +11,6 @@ import (
 // LoggerMock creates a log mock
 func LoggerMock() (*infra.Logger, *observer.ObservedLogs) {
 	core, recorded := observer.New(zapcore.InfoLevel)
-	logger := &infra.Logger{Log: zap.New(core)}
+	logger := &infra.Logger{Zap: zap.New(core)}
 	return logger, recorded
 }

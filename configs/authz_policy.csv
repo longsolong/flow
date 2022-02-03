@@ -1,0 +1,9 @@
+# example
+# https://github.com/casbin/casbin/blob/master/examples/rbac_with_resource_roles_model.conf
+# https://github.com/casbin/casbin/blob/master/examples/rbac_with_resource_roles_policy.csv
+
+p, role_apiv1_read, /api/v1/*, GET
+p, role_apiv1_write, /api/v1/*, (GET)|(POST)|(PUT)|(DELETE)
+p, role_admin, *, .*
+
+g, user_admin, role_admin

@@ -2,12 +2,10 @@ package route
 
 import (
 	"github.com/casbin/casbin/v2"
-	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-contrib/authz"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	"github.com/marvincaspar/go-web-app-boilerplate/pkg/http/rest/handler/response"
-	"time"
 )
 
 // APIV1RouterGroup ...
@@ -27,10 +25,6 @@ func (r APIV1RouterGroup) Setup() {
 	// middleware
 	apiv1.Use(authz.NewAuthorizer(e))
 	apiv1.Use(requestid.New())
-	apiv1.Use(sentrygin.New(sentrygin.Options{
-		Repanic: true,
-		Timeout: 3 * time.Second,
-	}))
 
 	// inject middleware
 	apiv1.Use(func(c *gin.Context) {
