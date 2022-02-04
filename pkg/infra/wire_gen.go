@@ -8,7 +8,7 @@ package infra
 
 import (
 	"github.com/google/wire"
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/setting"
+	"github.com/longsolong/flow/pkg/setting"
 	"sync"
 )
 

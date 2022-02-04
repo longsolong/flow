@@ -2,7 +2,7 @@ package infra
 
 import (
 	"go.uber.org/zap"
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/setting"
+	"github.com/longsolong/flow/pkg/setting"
 )
 
 // Logger represents a logger

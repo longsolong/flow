@@ -5,7 +5,7 @@ import (
 	"github.com/gin-contrib/authz"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/http/rest/handler/response"
+	"github.com/longsolong/flow/pkg/http/rest/handler/response"
 )
 
 // APIV1RouterGroup ...

@@ -7,9 +7,9 @@
 package cmd
 
 import (
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/http/rest"
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/infra"
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/setting"
+	"github.com/longsolong/flow/pkg/http/rest"
+	"github.com/longsolong/flow/pkg/infra"
+	"github.com/longsolong/flow/pkg/setting"
 	"net/http"
 )
 

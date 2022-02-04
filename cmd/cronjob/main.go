@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "github.com/marvincaspar/go-web-app-boilerplate/cmd/cronjob/cmd"
+import "github.com/longsolong/flow/cmd/cronjob/cmd"
 
 func main() {
 	cmd.Execute()

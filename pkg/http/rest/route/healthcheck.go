@@ -2,7 +2,7 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/marvincaspar/go-web-app-boilerplate/pkg/http/rest/handler"
+	"github.com/longsolong/flow/pkg/http/rest/handler"
 )
 
 // HealthCheckRoute ...

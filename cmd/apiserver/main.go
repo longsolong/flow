@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "github.com/marvincaspar/go-web-app-boilerplate/cmd/apiserver/cmd"
+import "github.com/longsolong/flow/cmd/apiserver/cmd"
 
 func main() {
 	cmd.Execute()

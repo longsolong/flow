@@ -1,4 +1,4 @@
-module github.com/marvincaspar/go-web-app-boilerplate
+module github.com/longsolong/flow
 
 go 1.17
 
